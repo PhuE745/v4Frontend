@@ -1,6 +1,6 @@
 {
   "name": "skillswap-frontend",
   "scripts": {
-    "start": "npx serve -s . -l $PORT"
+    "start": "npx http-server -p $PORT"
   }
 }
