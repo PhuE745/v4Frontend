@@ -2,7 +2,7 @@
   "name": "skillswap-frontend",
   "version": "1.0.0",
   "description": "",
-  "main": "global.js",
+  "main": "npx serve -s . -l $PORT",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
