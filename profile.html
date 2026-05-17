@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2563eb" />
+    <title>SkillSwap PH — Profile</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="style.css" rel="stylesheet" />
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --blue-light: #eff6ff;
+            --blue-mid: #dbeafe;
+            --green: #10b981;
+            --green-light: #dcfce7;
+            --yellow: #f59e0b;
+            --yellow-light: #fef9c3;
+            --red: #ef4444;
+            --red-light: #fee2e2;
+            --text: #0f172a;
+            --text-mid: #475569;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --bg: #f1f5f9;
+            --white: #ffffff;
+            --nav-h: 64px;
+            --sidebar-w: 260px;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .topnav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: var(--nav-h);
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 16px;
+        }
+
+        .brand { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+        .brand-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .brand-name { font-size: 1rem; font-weight: 800; color: var(--text); white-space: nowrap; }
+
+        .search-bar {
+            flex: 1;
+            max-width: 380px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 6px 12px;
+        }
+        .search-bar:focus-within { border-color: var(--blue); background: white; }
+        .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 0.8rem; }
+
+        .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .nav-btn {
+            width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--border);
+            background: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--text-mid); position: relative;
+        }
+        .nav-btn:hover { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+        .nav-btn .badge {
+            position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
+            border-radius: 50%; background: var(--red); color: white;
+            font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+        }
+        .avatar-btn {
+            width: 36px; height: 36px; border-radius: 10px; background: var(--blue);
+            color: white; font-size: 0.8rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        .layout { display: flex; margin-top: var(--nav-h); min-height: calc(100vh - var(--nav-h)); }
+
+        .sidebar {
+            width: var(--sidebar-w);
+            background: white;
+            border-right: 1px solid var(--border);
+            position: fixed;
+            top: var(--nav-h);
+            left: 0;
+            height: calc(100vh - var(--nav-h));
+            overflow-y: auto;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 50;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-light); padding: 16px 10px 6px; }
+        .sidebar-label:first-child { padding-top: 0; }
+        .nav-link {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-radius: 10px; font-size: 0.85rem; font-weight: 500;
+            color: var(--text-mid); cursor: pointer; text-decoration: none; transition: all 0.15s;
+        }
+        .nav-link:hover { background: var(--bg); color: var(--text); }
+        .nav-link.active { background: var(--blue-light); color: var(--blue); font-weight: 700; }
+        .logout-btn { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+        .btn-logout {
+            width: 100%; padding: 9px; border-radius: 10px; border: 1.5px solid var(--red-light);
+            background: var(--red-light); color: var(--red); font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+        }
+        .btn-logout:hover { background: var(--red); color: white; }
+
+        .main { margin-left: var(--sidebar-w); flex: 1; padding: 20px; overflow-x: hidden; }
+
+        .profile-header {
+            background: white; border-radius: 24px; border: 1.5px solid var(--border);
+            padding: 30px; margin-bottom: 24px; text-align: center;
+        }
+        .profile-avatar {
+            width: 100px; height: 100px; border-radius: 30px; background: linear-gradient(135deg, #2563eb, #3b82f6);
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+            color: white; font-size: 2rem; font-weight: 800;
+        }
+        .profile-name { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+        .profile-email { font-size: 0.85rem; color: var(--text-mid); margin-top: 4px; }
+        button#editProfileBtn {
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button#editProfileBtn:hover {
+            background: var(--blue-dark);
+        }
+        .profile-stats { display: flex; justify-content: center; gap: 32px; margin-top: 20px; flex-wrap: wrap; }
+        .stat { text-align: center; }
+        .stat-value { font-size: 1.3rem; font-weight: 800; color: var(--text); }
+        .stat-label { font-size: 0.7rem; color: var(--text-mid); margin-top: 4px; }
+
+        .info-card {
+            background: white; border-radius: 20px; border: 1.5px solid var(--border);
+            padding: 24px; margin-bottom: 20px;
+        }
+        .info-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .info-row { display: flex; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { width: 120px; font-size: 0.8rem; font-weight: 600; color: var(--text-mid); }
+        .info-value { flex: 1; font-size: 0.85rem; color: var(--text); }
+        .skill-badge {
+            display: inline-block; background: var(--blue-light); color: var(--blue);
+            padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+            margin: 2px 4px 2px 0;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-container {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-body input, .modal-body textarea {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 15px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            outline: none;
+        }
+        .modal-body input:focus, .modal-body textarea:focus {
+            border-color: var(--blue);
+        }
+        .modal-body label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-mid);
+            margin-bottom: 4px;
+            display: block;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-save {
+            flex: 1;
+            padding: 10px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-save:hover {
+            background: var(--blue-dark);
+        }
+        .btn-cancel {
+            flex: 1;
+            padding: 10px;
+            background: #e2e8f0;
+            color: var(--text);
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-cancel:hover {
+            background: #cbd5e1;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 16px; }
+            .hamburger { display: flex; }
+            .brand { min-width: auto; }
+            .brand-name { display: none; }
+            .search-bar { max-width: 100%; }
+            .info-label { width: 100px; }
+            .modal-container { width: 95%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toast"></div>
+    <div id="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>✏️ Edit Profile</h3>
+                <button class="modal-close" onclick="closeEditModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <label>Username</label>
+                <input type="text" id="editUsername" placeholder="Username">
+                <label>Full Name</label>
+                <input type="text" id="editFullName" placeholder="Full Name">
+                <label>Location</label>
+                <input type="text" id="editLocation" placeholder="Location">
+                <label>Bio</label>
+                <textarea id="editBio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                <div class="modal-buttons">
+                    <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button class="btn-save" onclick="saveProfile()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="topnav">
+        <button class="hamburger nav-btn" onclick="toggleSidebar()" aria-label="Menu">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="2" y1="5" x2="16" y2="5" />
+                <line x1="2" y1="9" x2="16" y2="9" />
+                <line x1="2" y1="13" x2="16" y2="13" />
+            </svg>
+        </button>
+        <div class="brand">
+            <div class="brand-logo">
+                <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+                    <path d="M7 9l7-5 7 5v10l-7 5-7-5V9z" fill="white" opacity="0.9" />
+                </svg>
+            </div>
+            <span class="brand-name">SkillSwap PH</span>
+        </div>
+        <div class="search-bar">
+            <svg width="12" height="12" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search skills..." />
+            <span id="clearSearch" style="cursor:pointer;color:#94a3b8;display:none;" onclick="clearSearchInput()">✕</span>
+        </div>
+        <div class="nav-actions">
+            <div class="nav-btn" onclick="openNotificationModal()" style="position:relative;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span class="badge" id="notifBadge">0</span>
+            </div>
+            <div class="nav-btn" onclick="window.location.href='messages.html'">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span class="badge" id="msgBadge">0</span>
+            </div>
+            <div class="avatar-btn" id="userAvatar" onclick="window.location.href='profile.html'">US</div>
+        </div>
+    </nav>
+
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <p class="sidebar-label">Navigation</p>
+            <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+            <a href="skills.html" class="nav-link">🔧 My Skills</a>
+            <a href="matches.html" class="nav-link">🤝 Matches</a>
+            <a href="exchanges.html" class="nav-link">🔄 Exchanges</a>
+            <a href="messages.html" class="nav-link">💬 Messages</a>
+            <a href="profile.html" class="nav-link active">👤 Profile</a>
+            <a href="admin.html" class="nav-link" id="adminLink" style="display: none;">⚙️ Admin Panel</a>
+            <div class="logout-btn">
+                <button class="btn-logout" onclick="logout()">🚪 Log Out</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="profile-header">
+                <div class="profile-avatar" id="profileAvatar">JD</div>
+                <div class="profile-name" id="profileName">Loading...</div>
+                <div class="profile-email" id="profileEmail"></div>
+                <button id="editProfileBtn">✏️ Edit Profile</button>
+                <div class="profile-stats">
+                    <div class="stat"><div class="stat-value" id="statExchanges">0</div><div class="stat-label">Exchanges</div></div>
+                    <div class="stat"><div class="stat-value" id="statSkills">0</div><div class="stat-label">Skills</div></div>
+                    <div class="stat"><div class="stat-value" id="statRating">—</div><div class="stat-label">Rating</div></div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-title"><span>ℹ️</span> Personal Information</div>
+                <div class="info-row"><div class="info-label">Member Since</div><div class="info-value" id="memberSince">—</div></div>
+                <div class="info-row"><div class="info-label">Username</div><div class="info-value" id="userUsername">—</div></div>
+                <div class="info-row"><div class="info-label">Bio</div><div class="info-value" id="userBio">—</div></div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-title"><span>🎯</span> Skills I Offer</div>
+                <div id="offerSkillsList"></div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-title"><span>📚</span> Skills I Want to Learn</div>
+                <div id="needSkillsList"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+
+        function showToast(msg, duration = 3000) {
+            const t = document.getElementById('toast');
+            if (t) {
+                t.textContent = msg;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), duration);
+            }
+        }
+
+        function openNotificationModal() { showToast('Notifications coming soon'); }
+
+        function clearSearchInput() {
+            const input = document.getElementById('searchInput');
+            if (input) input.value = '';
+        }
+
+        async function fetchCurrentUser() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return null;
+            try {
+                const response = await fetch(`${API_URL}/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch user error:', error);
+                return null;
+            }
+        }
+
+        async function fetchAllSkills() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/skills`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                return await response.json();
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        }
+
+        function updateUI(user, allSkills) {
+            const skillMap = {};
+            allSkills.forEach(skill => { skillMap[skill.name] = skill; });
+
+            const avatar = document.getElementById('profileAvatar');
+            if (avatar) avatar.textContent = (user.username || 'U').slice(0, 2).toUpperCase();
+            
+            document.getElementById('profileName').textContent = user.username || 'User';
+            document.getElementById('profileEmail').textContent = user.email || '';
+            document.getElementById('statExchanges').textContent = user.total_exchanges || 0;
+            
+            const skillCount = (user.skills_offered?.length || 0) + (user.skills_wanted?.length || 0);
+            document.getElementById('statSkills').textContent = skillCount;
+            document.getElementById('statRating').textContent = user.rating_avg || '—';
+            
+            document.getElementById('memberSince').textContent = formatDate(user.created_at);
+            document.getElementById('userUsername').textContent = user.username || '—';
+            document.getElementById('userBio').textContent = user.bio || 'No bio yet.';
+            
+            const offerContainer = document.getElementById('offerSkillsList');
+            const offered = user.skills_offered || [];
+            if (offered.length) {
+                offerContainer.innerHTML = offered.map(skill => {
+                    const skillData = skillMap[skill] || { name: skill, icon: '📚' };
+                    return `<span class="skill-badge">${skillData.icon || '📚'} ${skill}</span>`;
+                }).join('');
+            } else {
+                offerContainer.innerHTML = '<p style="color:var(--text-light);">No skills added yet.</p>';
+            }
+            
+            const needContainer = document.getElementById('needSkillsList');
+            const wanted = user.skills_wanted || [];
+            if (wanted.length) {
+                needContainer.innerHTML = wanted.map(skill => {
+                    const skillData = skillMap[skill] || { name: skill, icon: '📚' };
+                    return `<span class="skill-badge">${skillData.icon || '📚'} ${skill}</span>`;
+                }).join('');
+            } else {
+                needContainer.innerHTML = '<p style="color:var(--text-light);">No learning goals added yet.</p>';
+            }
+
+            const userAvatar = document.getElementById('userAvatar');
+            if (userAvatar) userAvatar.textContent = (user.username || 'U').slice(0, 2).toUpperCase();
+            
+            if (user.role === 'admin') {
+                const adminLink = document.getElementById('adminLink');
+                if (adminLink) adminLink.style.display = 'flex';
+            }
+        }
+
+        // Edit Profile functions
+        function openEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.add('show');
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('show');
+        }
+
+        async function saveProfile() {
+            const username = document.getElementById('editUsername').value;
+            const full_name = document.getElementById('editFullName').value;
+            const location = document.getElementById('editLocation').value;
+            const bio = document.getElementById('editBio').value;
+
+            const token = localStorage.getItem('access_token');
+            
+            try {
+                const response = await fetch(`${API_URL}/users/me`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        full_name: full_name,
+                        location: location,
+                        bio: bio
+                    })
+                });
+
+                if (response.ok) {
+                    showToast('✅ Profile updated successfully!');
+                    closeEditModal();
+                    // Refresh profile data
+                    const user = await fetchCurrentUser();
+                    const allSkills = await fetchAllSkills();
+                    updateUI(user, allSkills);
+                } else {
+                    const error = await response.json();
+                    showToast('❌ Update failed: ' + (error.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('❌ Failed to update profile');
+            }
+        }
+
+        async function loadEditForm() {
+            const user = await fetchCurrentUser();
+            if (user) {
+                document.getElementById('editUsername').value = user.username || '';
+                document.getElementById('editFullName').value = user.full_name || '';
+                document.getElementById('editLocation').value = user.location || '';
+                document.getElementById('editBio').value = user.bio || '';
+            }
+        }
+
+        async function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('saved_email');
+            localStorage.removeItem('user_email');
+            window.location.href = 'index.html';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('show');
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const user = await fetchCurrentUser();
+            if (!user) {
+                localStorage.removeItem('access_token');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const allSkills = await fetchAllSkills();
+            updateUI(user, allSkills);
+            
+            // Setup edit button
+            const editBtn = document.getElementById('editProfileBtn');
+            if (editBtn) {
+                editBtn.addEventListener('click', async () => {
+                    await loadEditForm();
+                    openEditModal();
+                });
+            }
+        });
+
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
+    </script>
+</body>
+
+</html>

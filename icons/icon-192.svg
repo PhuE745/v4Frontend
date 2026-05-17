@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- Background -->
+  <rect width="192" height="192" rx="40" fill="#2563eb"/>
+
+  <!-- Subtle glow circles -->
+  <circle cx="160" cy="40" r="60" fill="white" opacity="0.05"/>
+  <circle cx="30" cy="160" r="50" fill="white" opacity="0.04"/>
+
+  <!-- Hexagon / skill node shape -->
+  <polygon points="96,30 148,60 148,120 96,150 44,120 44,60"
+    fill="none" stroke="white" stroke-width="6" stroke-linejoin="round" opacity="0.3"/>
+
+  <!-- Inner filled hexagon -->
+  <polygon points="96,50 132,70 132,110 96,130 60,110 60,70"
+    fill="white" opacity="0.15"/>
+
+  <!-- Swap arrows icon -->
+  <g transform="translate(96,90)" fill="none" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Arrow left to right -->
+    <path d="M-28,-16 L28,-16" />
+    <polyline points="14,-28 28,-16 14,-4"/>
+    <!-- Arrow right to left -->
+    <path d="M28,16 L-28,16"/>
+    <polyline points="-14,4 -28,16 -14,28"/>
+  </g>
+</svg>

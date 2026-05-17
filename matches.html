@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2563eb" />
+    <title>SkillSwap PH — Matches</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="style.css" rel="stylesheet" />
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --blue-light: #eff6ff;
+            --blue-mid: #dbeafe;
+            --green: #10b981;
+            --green-light: #dcfce7;
+            --yellow: #f59e0b;
+            --yellow-light: #fef9c3;
+            --red: #ef4444;
+            --red-light: #fee2e2;
+            --text: #0f172a;
+            --text-mid: #475569;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --bg: #f1f5f9;
+            --white: #ffffff;
+            --nav-h: 64px;
+            --sidebar-w: 240px;
+        }
+
+        html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .topnav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--nav-h);
+            background: var(--white); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 20px; gap: 16px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; min-width: 200px; }
+        .brand-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--blue); display: flex; align-items: center; justify-content: center; }
+        .brand-name { font-size: 1rem; font-weight: 800; color: var(--text); }
+        .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+        .nav-btn {
+            width: 38px; height: 38px; border-radius: 10px; border: 1.5px solid var(--border);
+            background: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--text-mid);
+        }
+        .nav-btn:hover { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+        .avatar-btn { width: 38px; height: 38px; border-radius: 10px; background: var(--blue); color: white; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .hamburger { display: none; }
+        .layout { display: flex; margin-top: var(--nav-h); min-height: calc(100vh - var(--nav-h)); }
+
+        .sidebar {
+            width: var(--sidebar-w); background: white; border-right: 1px solid var(--border);
+            position: fixed; top: var(--nav-h); left: 0; height: calc(100vh - var(--nav-h));
+            overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 6px; z-index: 50;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-light); padding: 16px 10px 6px; }
+        .sidebar-label:first-child { padding-top: 0; }
+        .nav-link {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-radius: 10px; font-size: 0.85rem; font-weight: 500;
+            color: var(--text-mid); cursor: pointer; text-decoration: none;
+        }
+        .nav-link:hover { background: var(--bg); color: var(--text); }
+        .nav-link.active { background: var(--blue-light); color: var(--blue); font-weight: 700; }
+        .logout-btn { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+        .btn-logout {
+            width: 100%; padding: 9px; border-radius: 10px; border: 1.5px solid var(--red-light);
+            background: var(--red-light); color: var(--red); font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+        }
+        .btn-logout:hover { background: var(--red); color: white; }
+
+        .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 24px; }
+        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+        .page-sub { font-size: 0.85rem; color: var(--text-mid); margin-top: 3px; }
+
+        .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .match-card {
+            background: white; border-radius: 16px; border: 1.5px solid var(--border);
+            padding: 20px; transition: all 0.2s; cursor: default;
+        }
+        .match-card:hover { border-color: var(--blue); box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1); transform: translateY(-2px); }
+        .match-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .match-avatar {
+            width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #2563eb, #3b82f6);
+            display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem;
+        }
+        .match-info { flex: 1; }
+        .match-name { font-size: 1rem; font-weight: 700; color: var(--text); }
+        .match-score { background: var(--green-light); color: var(--green); font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
+        .skill-section { margin-bottom: 12px; }
+        .skill-label { font-size: 0.7rem; font-weight: 700; color: var(--text-light); margin-bottom: 6px; }
+        .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .skill-tag { font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+        .tag-offer { background: var(--green-light); color: #16a34a; }
+        .tag-matched { background: var(--blue-light); color: var(--blue); }
+        .btn-connect {
+            width: 100%; margin-top: 12px; padding: 10px; border-radius: 10px;
+            border: 1.5px solid var(--blue); background: white; color: var(--blue);
+            font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-connect:hover { background: var(--blue); color: white; }
+        .btn-connect.sent { background: var(--blue); color: white; cursor: default; }
+        .empty-state { text-align: center; padding: 60px; color: var(--text-light); }
+
+        @media (max-width: 1024px) { .match-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 16px; }
+            .hamburger { display: flex; }
+            .brand { min-width: unset; }
+            .match-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="toast"></div>
+    <div id="navOverlay" onclick="toggleSidebar()"></div>
+
+    <nav class="topnav">
+        <button class="hamburger nav-btn" onclick="toggleSidebar()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="2" y1="5" x2="16" y2="5" /><line x1="2" y1="9" x2="16" y2="9" /><line x1="2" y1="13" x2="16" y2="13" /></svg></button>
+        <div class="brand"><div class="brand-logo"><svg width="20" height="20" viewBox="0 0 28 28" fill="none"><path d="M7 9l7-5 7 5v10l-7 5-7-5V9z" fill="white" opacity="0.9" /></svg></div><span class="brand-name">SkillSwap PH</span></div>
+        <div class="nav-actions"><a href="dashboard.html" class="nav-btn"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg></a>
+            <div class="avatar-btn" id="userAvatar">JD</div>
+        </div>
+    </nav>
+
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <p class="sidebar-label">Navigation</p>
+            <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+            <a href="skills.html" class="nav-link">🔧 My Skills</a>
+            <a href="matches.html" class="nav-link active">🤝 Matches</a>
+            <a href="exchanges.html" class="nav-link">🔄 Exchanges</a>
+            <a href="messages.html" class="nav-link">💬 Messages</a>
+            <a href="profile.html" class="nav-link">👤 Profile</a>
+            <div class="logout-btn"><button class="btn-logout" onclick="logout()">🚪 Log Out</button></div>
+        </aside>
+
+        <main class="main">
+            <div class="page-header">
+                <div><h1 class="page-title">🤝 Skill Matches</h1><p class="page-sub">People matched with your skills based on recommendations</p></div>
+                <button onclick="loadMatches()" style="padding:8px 16px;border-radius:10px;border:1.5px solid var(--blue);background:white;color:var(--blue);font-weight:600;cursor:pointer;">⟳ Refresh</button>
+            </div>
+
+            <div class="match-grid" id="matchesGrid"><div class="empty-state">Loading matches...</div></div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+        let sentRequests = JSON.parse(localStorage.getItem('sentRequests') || '{}');
+
+        function showToast(msg, duration = 3000) {
+            const t = document.getElementById('toast');
+            if (t) {
+                t.textContent = msg;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), duration);
+            }
+        }
+
+        async function fetchCurrentUser() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return null;
+            try {
+                const response = await fetch(`${API_URL}/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function fetchMatches() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/matches`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                const data = await response.json();
+                return data.matches || [];
+            } catch (error) {
+                console.error('Fetch matches error:', error);
+                return [];
+            }
+        }
+
+        async function createExchange(providerId, skillName) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return null;
+            const scheduledDate = new Date();
+            scheduledDate.setDate(scheduledDate.getDate() + 7);
+            try {
+                const response = await fetch(`${API_URL}/exchanges`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        provider_id: providerId,
+                        skill_name: skillName,
+                        scheduled_date: scheduledDate.toISOString()
+                    })
+                });
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function updateUserAvatar() {
+            const user = await fetchCurrentUser();
+            if (user) {
+                const avatar = document.getElementById('userAvatar');
+                if (avatar) avatar.textContent = (user.username || 'US').slice(0, 2).toUpperCase();
+            }
+        }
+
+        async function loadMatches() {
+            const matches = await fetchMatches();
+            const grid = document.getElementById('matchesGrid');
+            
+            if (!matches.length) {
+                grid.innerHTML = '<div class="empty-state">🤝 No matches found. Add skills and interests to get recommendations!</div>';
+                return;
+            }
+            
+            grid.innerHTML = matches.map(m => {
+                const isSent = sentRequests[m.user_id];
+                const matchedSkills = m.skills_matched || [];
+                
+                return `
+                    <div class="match-card">
+                        <div class="match-header">
+                            <div class="match-avatar">${(m.username || 'U').slice(0, 2).toUpperCase()}</div>
+                            <div class="match-info">
+                                <div class="match-name">${m.username || 'User'}</div>
+                                <div class="match-score">${m.match_score}% Match</div>
+                            </div>
+                        </div>
+                        <div class="skill-section">
+                            <div class="skill-label">🎯 Matched Skills</div>
+                            <div class="skill-tags">
+                                ${matchedSkills.map(s => `<span class="skill-tag tag-matched">${s}</span>`).join('') || '<span class="skill-tag">No specific skills matched</span>'}
+                            </div>
+                        </div>
+                        <button class="btn-connect ${isSent ? 'sent' : ''}" data-user-id="${m.user_id}" data-skill="${matchedSkills[0] || ''}" onclick="handleConnect(this)">${isSent ? '✓ Request Sent' : '🤝 Connect'}</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.handleConnect = async function(btn) {
+            if (btn.classList.contains('sent')) return;
+            
+            const userId = btn.getAttribute('data-user-id');
+            const skillName = btn.getAttribute('data-skill');
+            
+            btn.textContent = '...';
+            btn.disabled = true;
+            
+            const result = await createExchange(userId, skillName);
+            
+            if (result) {
+                sentRequests[userId] = true;
+                localStorage.setItem('sentRequests', JSON.stringify(sentRequests));
+                btn.textContent = '✓ Request Sent';
+                btn.classList.add('sent');
+                showToast('✅ Exchange request sent!');
+            } else {
+                btn.textContent = '🤝 Connect';
+                btn.disabled = false;
+                showToast('❌ Failed to send request');
+            }
+        };
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('navOverlay');
+            if (sidebar) sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('show');
+        }
+
+        async function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('saved_email');
+            localStorage.removeItem('user_email');
+            localStorage.removeItem('sentRequests');
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await loadMatches();
+            await updateUserAvatar();
+        });
+
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
+    </script>
+</body>
+
+</html>

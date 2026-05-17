@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <meta name="theme-color" content="#2563eb" />
+    <title>SkillSwap PH — Messages</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="style.css" rel="stylesheet" />
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --blue: #2563eb;
+            --blue-light: #eff6ff;
+            --blue-mid: #dbeafe;
+            --text: #0f172a;
+            --text-mid: #475569;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --bg: #f1f5f9;
+            --white: #ffffff;
+            --nav-h: 64px;
+            --sidebar-w: 260px;
+        }
+
+        html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .topnav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--nav-h);
+            background: var(--white); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 20px; gap: 16px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+        .brand-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .brand-name { font-size: 1rem; font-weight: 800; color: var(--text); white-space: nowrap; }
+        .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .nav-btn {
+            width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--border);
+            background: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--text-mid);
+        }
+        .nav-btn:hover { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+        .avatar-btn { width: 36px; height: 36px; border-radius: 10px; background: var(--blue); color: white; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .hamburger { display: none; }
+        .layout { display: flex; margin-top: var(--nav-h); min-height: calc(100vh - var(--nav-h)); }
+
+        .sidebar {
+            width: var(--sidebar-w); background: white; border-right: 1px solid var(--border);
+            position: fixed; top: var(--nav-h); left: 0; height: calc(100vh - var(--nav-h));
+            overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 6px; z-index: 50;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-light); padding: 16px 10px 6px; }
+        .sidebar-label:first-child { padding-top: 0; }
+        .nav-link {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-radius: 10px; font-size: 0.85rem; font-weight: 500;
+            color: var(--text-mid); cursor: pointer; text-decoration: none; transition: all 0.15s;
+        }
+        .nav-link:hover { background: var(--bg); color: var(--text); }
+        .nav-link.active { background: var(--blue-light); color: var(--blue); font-weight: 700; }
+        .logout-btn { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+        .btn-logout {
+            width: 100%; padding: 9px; border-radius: 10px; border: 1.5px solid #fee2e2;
+            background: #fff5f5; color: #ef4444; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+        }
+        .btn-logout:hover { background: #ef4444; color: white; }
+
+        .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 24px; }
+        .page-header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .page-title { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+        .page-sub { font-size: 0.85rem; color: var(--text-mid); margin-top: 3px; }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+        .tab-btn {
+            padding: 8px 20px;
+            border: none;
+            background: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-mid);
+            cursor: pointer;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+        .tab-btn:hover {
+            background: var(--bg);
+        }
+
+        .messages-list { display: flex; flex-direction: column; gap: 8px; }
+        .message-card {
+            background: white; border-radius: 14px; border: 1.5px solid var(--border);
+            padding: 14px 18px; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .message-card:hover { border-color: var(--blue); box-shadow: 0 2px 12px rgba(37, 99, 235, 0.08); }
+        .message-avatar {
+            width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #2563eb, #3b82f6);
+            display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .message-content { flex: 1; }
+        .message-sender { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .message-name { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+        .message-time { font-size: 0.7rem; color: var(--text-light); }
+        .message-preview { font-size: 0.8rem; color: var(--text-mid); margin-top: 4px; }
+        .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+
+        .connected-list {
+            background: white;
+            border-radius: 14px;
+            border: 1.5px solid var(--border);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .connected-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .connected-item:last-child { border-bottom: none; }
+        .connected-item:hover { background: var(--blue-light); }
+        .connected-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .connected-info { flex: 1; }
+        .connected-name { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+        .connected-skill { font-size: 0.7rem; color: var(--text-mid); }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+            opacity: 0; visibility: hidden; transition: all 0.2s;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-container {
+            background: white; border-radius: 20px; width: 90%; max-width: 500px;
+            max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .modal-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+        .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); }
+        .modal-body { padding: 14px 16px; overflow-y: auto; flex: 1; }
+
+        .chat-messages { max-height: 400px; overflow-y: auto; padding: 10px; background: var(--bg); border-radius: 12px; margin-bottom: 12px; }
+        .chat-message { margin-bottom: 12px; display: flex; flex-direction: column; }
+        .chat-message.sent { align-items: flex-end; }
+        .chat-message.received { align-items: flex-start; }
+        .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 16px; font-size: 0.75rem; word-wrap: break-word; }
+        .chat-message.sent .chat-bubble { background: var(--blue); color: white; border-bottom-right-radius: 4px; }
+        .chat-message.received .chat-bubble { background: white; border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+        .chat-time { font-size: 0.55rem; color: var(--text-light); margin-top: 2px; margin-left: 8px; margin-right: 8px; }
+        .chat-input-area { display: flex; gap: 10px; margin-top: 8px; }
+        .chat-input-area input { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.75rem; outline: none; }
+        .chat-input-area button { padding: 10px 16px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
+
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #0f172a; color: white; padding: 8px 16px; border-radius: 10px; font-size: 0.7rem; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        #navOverlay { display: none; position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(2px); }
+        #navOverlay.show { display: block; }
+        .empty-state { text-align: center; padding: 60px; color: var(--text-light); }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 16px; }
+            .hamburger { display: flex; }
+            .brand { min-width: auto; }
+            .brand-name { display: none; }
+            .modal-container { width: 95%; margin: 10px; }
+            .message-card { padding: 12px 14px; gap: 10px; }
+            .message-avatar { width: 40px; height: 40px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="toast"></div>
+    <div id="navOverlay" onclick="toggleSidebar()"></div>
+
+    <div class="modal-overlay" id="chatModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="chatModalTitle">💬 Conversation</h3>
+                <button class="modal-close" onclick="closeChatModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Type a message..." />
+                    <button onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="topnav">
+        <button class="hamburger nav-btn" onclick="toggleSidebar()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="2" y1="5" x2="16" y2="5" /><line x1="2" y1="9" x2="16" y2="9" /><line x1="2" y1="13" x2="16" y2="13" /></svg></button>
+        <div class="brand"><div class="brand-logo"><svg width="20" height="20" viewBox="0 0 28 28" fill="none"><path d="M7 9l7-5 7 5v10l-7 5-7-5V9z" fill="white" opacity="0.9" /></svg></div><span class="brand-name">SkillSwap PH</span></div>
+        <div class="nav-actions"><a href="dashboard.html" class="nav-btn"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg></a>
+            <div class="avatar-btn" id="userAvatar">JD</div>
+        </div>
+    </nav>
+
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <p class="sidebar-label">Navigation</p>
+            <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+            <a href="skills.html" class="nav-link">🔧 My Skills</a>
+            <a href="matches.html" class="nav-link">🤝 Matches</a>
+            <a href="exchanges.html" class="nav-link">🔄 Exchanges</a>
+            <a href="messages.html" class="nav-link active">💬 Messages</a>
+            <a href="profile.html" class="nav-link">👤 Profile</a>
+            <div class="logout-btn"><button class="btn-logout" onclick="logout()">🚪 Log Out</button></div>
+        </aside>
+
+        <main class="main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">💬 Messages</h1>
+                    <p class="page-sub">Connect with your peers</p>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('conversations')">Conversations</button>
+                <button class="tab-btn" onclick="switchTab('connections')">Connections</button>
+            </div>
+
+            <div id="conversationsTab">
+                <div class="messages-list" id="messagesList"><div class="empty-state">Loading conversations...</div></div>
+            </div>
+
+            <div id="connectionsTab" style="display: none;">
+                <div class="connected-list" id="connectionsList"><div class="empty-state">Loading connections...</div></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+        let conversations = [];
+        let currentChatUser = null;
+        let currentChatUserId = null;
+        let chatHistory = [];
+        let currentTab = 'conversations';
+        let allConnections = [];
+        let refreshInterval = null;
+
+        function showToast(msg, duration = 3000) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), duration);
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (tab === 'conversations') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('conversationsTab').style.display = 'block';
+                document.getElementById('connectionsTab').style.display = 'none';
+                renderConversations();
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('conversationsTab').style.display = 'none';
+                document.getElementById('connectionsTab').style.display = 'block';
+                loadConnections();
+            }
+        }
+
+        async function fetchCurrentUser() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return null;
+            try {
+                const response = await fetch(`${API_URL}/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function fetchConversations() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/messages/conversations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch conversations error:', error);
+                return [];
+            }
+        }
+
+        async function fetchMessages(otherUserId) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/messages/${otherUserId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch messages error:', error);
+                return [];
+            }
+        }
+
+        async function fetchMatches() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/matches`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                const data = await response.json();
+                return data.matches || [];
+            } catch (error) {
+                console.error('Fetch matches error:', error);
+                return [];
+            }
+        }
+
+        async function fetchExchanges() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/exchanges`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch exchanges error:', error);
+                return [];
+            }
+        }
+
+        async function sendMessage(receiverId, message) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return false;
+            try {
+                const response = await fetch(`${API_URL}/messages/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ receiver_id: receiverId, message: message })
+                });
+                return response.ok;
+            } catch (error) {
+                console.error('Send message error:', error);
+                return false;
+            }
+        }
+
+        async function loadConnections() {
+            const container = document.getElementById('connectionsList');
+            container.innerHTML = '<div class="empty-state">Loading connections...</div>';
+            
+            const matches = await fetchMatches();
+            const exchanges = await fetchExchanges();
+            const currentUser = await fetchCurrentUser();
+            const userId = currentUser?.id;
+            
+            const connectionsMap = new Map();
+            
+            matches.forEach(match => {
+                if (match.user_id !== userId) {
+                    connectionsMap.set(match.user_id, {
+                        user_id: match.user_id,
+                        username: match.username,
+                        match_score: match.match_score,
+                        source: 'match'
+                    });
+                }
+            });
+            
+            exchanges.forEach(ex => {
+                const otherId = ex.requester_id === userId ? ex.provider_id : ex.requester_id;
+                const otherName = ex.requester_id === userId ? ex.provider_name : ex.requester_name;
+                if (otherId !== userId) {
+                    if (!connectionsMap.has(otherId)) {
+                        connectionsMap.set(otherId, {
+                            user_id: otherId,
+                            username: otherName || 'User',
+                            source: 'exchange',
+                            status: ex.status
+                        });
+                    }
+                }
+            });
+            
+            allConnections = Array.from(connectionsMap.values());
+            
+            if (!allConnections.length) {
+                container.innerHTML = '<div class="empty-state">💬 No connections yet. Go to Matches to find skill partners!</div>';
+                return;
+            }
+            
+            container.innerHTML = allConnections.map(conn => `
+                <div class="connected-item" onclick="openChat('${conn.user_id}', '${conn.username.replace(/'/g, "\\'")}')">
+                    <div class="connected-avatar">${(conn.username || 'U').slice(0, 2).toUpperCase()}</div>
+                    <div class="connected-info">
+                        <div class="connected-name">${conn.username || 'User'}</div>
+                        <div class="connected-skill">${conn.source === 'match' ? `Match Score: ${conn.match_score}%` : `Exchange: ${conn.status || 'Connected'}`}</div>
+                    </div>
+                    <button class="btn-message" style="padding:6px 12px; background:var(--blue); color:white; border:none; border-radius:20px; font-size:0.7rem; cursor:pointer;">Message</button>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const hours = diff / (1000 * 60 * 60);
+            if (hours < 1) {
+                const minutes = Math.floor(diff / (1000 * 60));
+                return `${minutes} min ago`;
+            } else if (hours < 24) {
+                return `${Math.floor(hours)} hour${Math.floor(hours) !== 1 ? 's' : ''} ago`;
+            } else {
+                return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            }
+        }
+
+        async function renderConversations() {
+            const container = document.getElementById('messagesList');
+            conversations = await fetchConversations();
+            
+            if (!conversations.length) {
+                container.innerHTML = '<div class="empty-state">💬 No messages yet. Go to Connections tab to start a conversation!</div>';
+                return;
+            }
+            
+            container.innerHTML = conversations.map(conv => `
+                <div class="message-card" onclick="openChat('${conv.user_id}', '${conv.username.replace(/'/g, "\\'")}')">
+                    <div class="message-avatar">${(conv.username || 'U').slice(0, 2).toUpperCase()}</div>
+                    <div class="message-content">
+                        <div class="message-sender">
+                            <span class="message-name">${conv.username || 'User'}</span>
+                            <span class="message-time">${formatDate(conv.last_message_time)}</span>
+                        </div>
+                        <div class="message-preview">${escapeHtml(conv.last_message?.substring(0, 50) || 'No messages')}</div>
+                    </div>
+                    ${conv.unread_count > 0 ? '<div class="unread-dot"></div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        async function openChat(userId, userName) {
+            currentChatUserId = userId;
+            currentChatUser = userName;
+            
+            const data = await fetchMessages(userId);
+            chatHistory = data.messages || [];
+            
+            document.getElementById('chatModalTitle').textContent = `💬 Chat with ${userName}`;
+            renderChatMessages();
+            document.getElementById('chatModal').classList.add('show');
+            
+            // Clear any existing refresh interval
+            if (refreshInterval) clearInterval(refreshInterval);
+            
+            // Refresh messages every 3 seconds while chat is open
+            refreshInterval = setInterval(async () => {
+                if (currentChatUserId && document.getElementById('chatModal').classList.contains('show')) {
+                    const newData = await fetchMessages(currentChatUserId);
+                    if (JSON.stringify(newData.messages) !== JSON.stringify(chatHistory)) {
+                        chatHistory = newData.messages || [];
+                        renderChatMessages();
+                        if (currentTab === 'conversations') {
+                            await renderConversations();
+                        }
+                    }
+                }
+            }, 3000);
+        }
+
+        function renderChatMessages() {
+            const container = document.getElementById('chatMessages');
+            
+            if (!chatHistory.length) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-light);">No messages yet. Send a message!</div>';
+                return;
+            }
+            
+            container.innerHTML = chatHistory.map(msg => `
+                <div class="chat-message ${msg.is_mine ? 'sent' : 'received'}">
+                    <div class="chat-bubble">${escapeHtml(msg.message)}</div>
+                    <div class="chat-time">${formatDate(msg.created_at)}</div>
+                </div>
+            `).join('');
+            
+            // Scroll to bottom
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 50);
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !currentChatUserId) return;
+            
+            // Disable send button temporarily
+            const sendBtn = document.querySelector('#chatModal .chat-input-area button');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            
+            const success = await sendMessage(currentChatUserId, text);
+            
+            if (success) {
+                input.value = '';
+                // Refresh messages
+                const data = await fetchMessages(currentChatUserId);
+                chatHistory = data.messages || [];
+                renderChatMessages();
+                
+                // Refresh conversation list to show updated preview
+                if (currentTab === 'conversations') {
+                    conversations = await fetchConversations();
+                    renderConversations();
+                } else {
+                    loadConnections();
+                }
+                
+                showToast('✅ Message sent');
+            } else {
+                showToast('❌ Failed to send message');
+            }
+            
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+        }
+
+        async function updateUserAvatar() {
+            const user = await fetchCurrentUser();
+            if (user) {
+                document.getElementById('userAvatar').textContent = (user.username || 'US').slice(0, 2).toUpperCase();
+            } else {
+                const savedEmail = localStorage.getItem('user_email') || 'User';
+                const initial = savedEmail.split('@')[0].slice(0, 2).toUpperCase();
+                document.getElementById('userAvatar').textContent = initial;
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function closeChatModal() {
+            document.getElementById('chatModal').classList.remove('show');
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            currentChatUser = null;
+            currentChatUserId = null;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('navOverlay').classList.toggle('show');
+        }
+
+        async function logout() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('saved_email');
+            localStorage.removeItem('user_email');
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await updateUserAvatar();
+            await renderConversations();
+            await loadConnections();
+        });
+
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
+    </script>
+</body>
+
+</html>

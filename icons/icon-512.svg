@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#2563eb"/>
+
+  <!-- Gradient overlay -->
+  <defs>
+    <radialGradient id="glow" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#glow)"/>
+
+  <!-- Outer hexagon ring -->
+  <polygon points="256,60 390,135 390,285 256,360 122,285 122,135"
+    fill="none" stroke="white" stroke-width="10" stroke-linejoin="round" opacity="0.2"/>
+
+  <!-- Inner hexagon -->
+  <polygon points="256,110 350,163 350,270 256,323 162,270 162,163"
+    fill="white" opacity="0.1"/>
+
+  <!-- Swap arrows -->
+  <g transform="translate(256,230)" fill="none" stroke="white" stroke-width="18"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- Top arrow → -->
+    <path d="M-70,-38 L70,-38"/>
+    <polyline points="40,-68 70,-38 40,-8"/>
+    <!-- Bottom arrow ← -->
+    <path d="M70,38 L-70,38"/>
+    <polyline points="-40,8 -70,38 -40,68"/>
+  </g>
+
+  <!-- PH text badge -->
+  <rect x="196" y="360" width="120" height="44" rx="22" fill="white" opacity="0.15"/>
+  <text x="256" y="389" text-anchor="middle" fill="white"
+    font-family="'Plus Jakarta Sans', sans-serif"
+    font-size="22" font-weight="700" letter-spacing="2">PH</text>
+</svg>
