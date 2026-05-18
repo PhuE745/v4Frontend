@@ -169,7 +169,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000/api/v1';
+       
         let sentRequests = JSON.parse(localStorage.getItem('sentRequests') || '{}');
 
         function showToast(msg, duration = 3000) {
@@ -329,6 +329,7 @@
 
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
     </script>
+    <script src="config.js"></script>
 </body>
 
 </html>

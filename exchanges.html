@@ -216,7 +216,6 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000/api/v1';
         let currentRatingExchangeId = null;
         let currentReviewId = null;
         let selectedRating = 0;
@@ -556,6 +555,7 @@
 
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
     </script>
+    <script src="config.js"></script>
 </body>
 
 </html>
