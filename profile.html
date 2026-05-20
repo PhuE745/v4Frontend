@@ -14,6 +14,53 @@
         rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="style.css" rel="stylesheet" />
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+        
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+        
+        window.requestNotificationPermission = async function() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const token = await getToken(messaging, { vapidKey: "YOUR_VAPID_KEY" });
+                    const apiUrl = window.API_CONFIG?.BASE_URL || 'https://skillswapph-production.up.railway.app/api/v1';
+                    const authToken = localStorage.getItem('access_token');
+                    await fetch(`${apiUrl}/fcm/register-token`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: token })
+                    });
+                    showToast('✅ Notifications enabled!');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+        
+        onMessage(messaging, (payload) => {
+            showToast(`🔔 ${payload.notification?.title || 'New notification'}: ${payload.notification?.body || ''}`);
+            if (window.loadUnreadCounts) window.loadUnreadCounts();
+        });
+        
+        if (localStorage.getItem('access_token')) {
+            setTimeout(() => { if (Notification.permission === 'default') window.requestNotificationPermission(); }, 2000);
+        }
+    </script>
+
     <style>
         * {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -39,6 +86,10 @@
             --white: #ffffff;
             --nav-h: 64px;
             --sidebar-w: 260px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         html, body {
@@ -84,7 +135,7 @@
         .search-bar:focus-within { border-color: var(--blue); background: white; }
         .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 0.8rem; }
 
-        .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; position: relative; }
         .nav-btn {
             width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--border);
             background: white; display: flex; align-items: center; justify-content: center;
@@ -92,14 +143,89 @@
         }
         .nav-btn:hover { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
         .nav-btn .badge {
-            position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
+            position: absolute; top: -6px; right: -6px;
+            min-width: 18px; height: 18px;
             border-radius: 50%; background: var(--red); color: white;
-            font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 4px;
         }
         .avatar-btn {
             width: 36px; height: 36px; border-radius: 10px; background: var(--blue);
             color: white; font-size: 0.8rem; font-weight: 700;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        /* Notification Dropdown */
+        .notification-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 320px;
+            max-height: 400px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            z-index: 200;
+            display: none;
+            overflow: hidden;
+            flex-direction: column;
+        }
+        .notification-dropdown.show {
+            display: flex;
+        }
+        .notification-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notification-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .notification-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .notification-item:hover {
+            background: var(--blue-light);
+        }
+        .notification-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .notification-body {
+            font-size: 0.7rem;
+            color: var(--text-mid);
+            margin-bottom: 4px;
+        }
+        .notification-time {
+            font-size: 0.55rem;
+            color: var(--text-light);
+        }
+        .notification-empty {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.75rem;
+        }
+        .mark-all-read {
+            font-size: 0.65rem;
+            color: var(--blue);
+            cursor: pointer;
+        }
+        .mark-all-read:hover {
+            text-decoration: underline;
         }
 
         .layout { display: flex; margin-top: var(--nav-h); min-height: calc(100vh - var(--nav-h)); }
@@ -150,8 +276,13 @@
         }
         .profile-name { font-size: 1.5rem; font-weight: 800; color: var(--text); }
         .profile-email { font-size: 0.85rem; color: var(--text-mid); margin-top: 4px; }
-        button#editProfileBtn {
+        
+        .edit-btn-wrapper {
+            display: flex;
+            justify-content: center;
             margin-top: 16px;
+        }
+        #editProfileBtn {
             padding: 10px 24px;
             background: var(--blue);
             color: white;
@@ -160,9 +291,8 @@
             cursor: pointer;
             font-weight: 600;
         }
-        button#editProfileBtn:hover {
-            background: var(--blue-dark);
-        }
+        #editProfileBtn:hover { background: var(--blue-dark); }
+        
         .profile-stats { display: flex; justify-content: center; gap: 32px; margin-top: 20px; flex-wrap: wrap; }
         .stat { text-align: center; }
         .stat-value { font-size: 1.3rem; font-weight: 800; color: var(--text); }
@@ -181,6 +311,175 @@
             display: inline-block; background: var(--blue-light); color: var(--blue);
             padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
             margin: 2px 4px 2px 0;
+        }
+
+        /* Add Post Container */
+        .add-post-container {
+            padding: 16px 20px;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            background: var(--white);
+            margin-bottom: 20px;
+        }
+        #postContent {
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.85rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+        #postContent:focus, #postSkillTag:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        #postSkillTag {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        #submitPostBtn {
+            padding: 8px 20px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #submitPostBtn:hover:not(:disabled) { background: var(--blue-dark); }
+        #submitPostBtn:disabled { opacity: 0.7; cursor: not-allowed; }
+        #charCount {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            align-self: center;
+        }
+        
+        /* Skill Dropdown Styles */
+        .skill-dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+        .skill-dropdown-item:hover {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+        .skill-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Post styles */
+        .post-card {
+            background: var(--bg);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .post-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .post-avatar-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .post-user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        .post-author-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+        .post-date {
+            font-size: 0.6rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+        .post-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .post-skill-tag {
+            font-size: 0.7rem;
+            color: var(--blue);
+            background: var(--blue-light);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .post-content {
+            font-size: 0.85rem;
+            color: var(--text-mid);
+            margin-bottom: 12px;
+            line-height: 1.4;
+            padding-left: 50px;
+        }
+        .attachment-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--blue-light);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            text-decoration: none;
+            color: var(--blue);
+            margin-top: 8px;
+            margin-left: 50px;
+        }
+        .post-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.7rem;
+            color: var(--text-light);
+            padding-left: 50px;
+            margin-top: 8px;
+        }
+        .delete-post-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .delete-post-btn:hover {
+            background: var(--red-light);
+            color: var(--red);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
         }
 
         /* Modal Styles */
@@ -282,9 +581,6 @@
             font-weight: 600;
             cursor: pointer;
         }
-        .btn-cancel:hover {
-            background: #cbd5e1;
-        }
 
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -296,6 +592,9 @@
             .search-bar { max-width: 100%; }
             .info-label { width: 100px; }
             .modal-container { width: 95%; }
+            .post-content, .post-stats, .attachment-link { padding-left: 0; margin-left: 0; }
+            .post-user-info { flex-wrap: wrap; }
+            .notification-dropdown { width: 300px; right: -20px; }
         }
     </style>
 </head>
@@ -303,6 +602,17 @@
 <body>
     <div id="toast"></div>
     <div id="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Notification Dropdown -->
+    <div class="notification-dropdown" id="notificationDropdown">
+        <div class="notification-header">
+            <span>🔔 Notifications</span>
+            <span class="mark-all-read" onclick="markAllNotificationsRead()">Mark all as read</span>
+        </div>
+        <div class="notification-list" id="notificationList">
+            <div class="notification-empty">Loading notifications...</div>
+        </div>
+    </div>
 
     <!-- Edit Profile Modal -->
     <div class="modal-overlay" id="editModal">
@@ -353,18 +663,18 @@
             <span id="clearSearch" style="cursor:pointer;color:#94a3b8;display:none;" onclick="clearSearchInput()">✕</span>
         </div>
         <div class="nav-actions">
-            <div class="nav-btn" onclick="openNotificationModal()" style="position:relative;">
+            <div class="nav-btn" onclick="toggleNotificationDropdown()" style="position:relative;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                <span class="badge" id="notifBadge">0</span>
+                <span class="badge" id="notifBadge" style="display: none;">0</span>
             </div>
             <div class="nav-btn" onclick="window.location.href='messages.html'">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                <span class="badge" id="msgBadge">0</span>
+                <span class="badge" id="msgBadge" style="display: none;">0</span>
             </div>
             <div class="avatar-btn" id="userAvatar" onclick="window.location.href='profile.html'">US</div>
         </div>
@@ -390,7 +700,9 @@
                 <div class="profile-avatar" id="profileAvatar">JD</div>
                 <div class="profile-name" id="profileName">Loading...</div>
                 <div class="profile-email" id="profileEmail"></div>
-                <button id="editProfileBtn">✏️ Edit Profile</button>
+                <div class="edit-btn-wrapper">
+                    <button id="editProfileBtn" style="display: none;">✏️ Edit Profile</button>
+                </div>
                 <div class="profile-stats">
                     <div class="stat"><div class="stat-value" id="statExchanges">0</div><div class="stat-label">Exchanges</div></div>
                     <div class="stat"><div class="stat-value" id="statSkills">0</div><div class="stat-label">Skills</div></div>
@@ -414,26 +726,228 @@
                 <div class="info-title"><span>📚</span> Skills I Want to Learn</div>
                 <div id="needSkillsList"></div>
             </div>
+
+            <!-- Add Post Section (only visible on own profile) -->
+            <div id="addPostContainer" class="add-post-container" style="display: none;">
+                <form id="addPostForm" style="display: flex; flex-direction: column; gap: 12px;">
+                    <textarea id="postContent" rows="3" placeholder="What skill are you working on today? Share your progress, ask questions, or offer help..." maxlength="500"></textarea>
+                    <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                        <div style="flex: 1; position: relative;">
+                            <input type="text" id="postSkillTag" placeholder="Search or select skill tag..." maxlength="50" autocomplete="off" />
+                            <div id="skillDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1.5px solid var(--border); border-radius: 10px; max-height: 200px; overflow-y: auto; z-index: 100; margin-top: 4px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);"></div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="file" id="postFileInput" style="display: none;" />
+                            <button type="button" onclick="document.getElementById('postFileInput').click()" style="padding: 8px 12px; background: #64748b; color: white; border: none; border-radius: 10px; cursor: pointer;">📎</button>
+                            <span id="charCount">0/500</span>
+                            <button type="submit" id="submitPostBtn">Post</button>
+                        </div>
+                    </div>
+                    <div id="postFilePreview" style="display: none; font-size: 0.7rem; color: var(--text-mid); padding: 5px 10px; background: var(--bg); border-radius: 8px;"></div>
+                </form>
+            </div>
+
+            <!-- Posts Section -->
+            <div class="info-card">
+                <div class="info-title"><span>📝</span> My Posts</div>
+                <div id="userPostsList" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="empty-state">Loading posts...</div>
+                </div>
+            </div>
         </main>
     </div>
 
     <script>
+        // config.js content - API URL configuration
+        
+        let viewingUserId = null;
+        let allSkillsList = [];
+        let selectedPostFile = null;
+        let notifications = [];
 
         function showToast(msg, duration = 3000) {
-            const t = document.getElementById('toast');
-            if (t) {
-                t.textContent = msg;
-                t.classList.add('show');
-                setTimeout(() => t.classList.remove('show'), duration);
+            let t = document.getElementById('toast');
+            if (!t) {
+                const toastDiv = document.createElement('div');
+                toastDiv.id = 'toast';
+                document.body.appendChild(toastDiv);
+                t = toastDiv;
+            }
+            t.textContent = msg;
+            t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2937;color:white;padding:10px 20px;border-radius:12px;font-size:0.8rem;z-index:2000;opacity:0;transition:opacity 0.3s;';
+            setTimeout(() => { t.style.opacity = '1'; }, 10);
+            setTimeout(() => { if (t) t.style.opacity = '0'; setTimeout(() => { if (t && t.parentNode) t.parentNode.removeChild(t); }, 300); }, duration);
+        }
+
+        // Notification Functions
+        function toggleNotificationDropdown() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('show');
+            if (dropdown.classList.contains('show')) {
+                loadNotifications();
             }
         }
 
-        function openNotificationModal() { showToast('Notifications coming soon'); }
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('notificationDropdown');
+            const bellBtn = document.querySelector('.nav-actions .nav-btn:first-child');
+            if (dropdown && bellBtn && !bellBtn.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
 
-        function clearSearchInput() {
-            const input = document.getElementById('searchInput');
-            if (input) input.value = '';
+        async function loadNotifications() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+            
+            try {
+                const sessionsResponse = await fetch(`${API_URL}/sessions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const sessions = await sessionsResponse.json();
+                
+                const convResponse = await fetch(`${API_URL}/messages/conversations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const conversations = await convResponse.json();
+                
+                notifications = [];
+                
+                sessions.forEach(session => {
+                    if (session.status === 'pending' && !session.is_mine) {
+                        notifications.push({
+                            id: `session_${session.id}`,
+                            type: 'session',
+                            title: '📅 Session Proposal',
+                            body: `${session.proposer_name} proposed a session about ${session.skill_tag || 'skill exchange'}`,
+                            time: session.created_at,
+                            read: false,
+                            data: { session_id: session.id, user_id: session.proposer_id }
+                        });
+                    }
+                });
+                
+                conversations.forEach(conv => {
+                    if (conv.unread_count > 0) {
+                        notifications.push({
+                            id: `message_${conv.user_id}`,
+                            type: 'message',
+                            title: '💬 New Message',
+                            body: `${conv.unread_count} new message${conv.unread_count > 1 ? 's' : ''} from ${conv.username}`,
+                            time: conv.last_message_time,
+                            read: false,
+                            data: { user_id: conv.user_id, username: conv.username }
+                        });
+                    }
+                });
+                
+                notifications.sort((a, b) => new Date(b.time) - new Date(a.time));
+                renderNotifications();
+                loadUnreadCounts();
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
         }
+
+        function renderNotifications() {
+            const container = document.getElementById('notificationList');
+            
+            if (!notifications.length) {
+                container.innerHTML = '<div class="notification-empty">✨ No new notifications</div>';
+                return;
+            }
+            
+            container.innerHTML = notifications.map(notif => `
+                <div class="notification-item" onclick="handleNotificationClick('${notif.type}', '${notif.data.user_id || notif.data.session_id}')">
+                    <div class="notification-title">${notif.title}</div>
+                    <div class="notification-body">${notif.body}</div>
+                    <div class="notification-time">${formatDate(notif.time)}</div>
+                </div>
+            `).join('');
+        }
+
+        function handleNotificationClick(type, id) {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.remove('show');
+            
+            if (type === 'message') {
+                window.location.href = 'messages.html';
+            } else if (type === 'session') {
+                window.location.href = 'messages.html?tab=sessions';
+            }
+        }
+
+        function markAllNotificationsRead() {
+            notifications.forEach(n => n.read = true);
+            renderNotifications();
+            loadUnreadCounts();
+            showToast('✅ All notifications marked as read');
+        }
+
+        // Unread Count Functions
+        async function fetchUnreadMessagesCount() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return 0;
+            try {
+                const response = await fetch(`${API_URL}/messages/conversations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return 0;
+                const conversations = await response.json();
+                return conversations.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
+            } catch (error) {
+                return 0;
+            }
+        }
+
+        async function fetchUnreadNotificationsCount() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return 0;
+            try {
+                const response = await fetch(`${API_URL}/sessions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return 0;
+                const sessions = await response.json();
+                const pendingSessions = sessions.filter(s => s.status === 'pending' && !s.is_mine);
+                const unreadMessages = await fetchUnreadMessagesCount();
+                return pendingSessions.length + unreadMessages;
+            } catch (error) {
+                return 0;
+            }
+        }
+
+        async function loadUnreadCounts() {
+            try {
+                const unreadMessages = await fetchUnreadMessagesCount();
+                const unreadNotifications = await fetchUnreadNotificationsCount();
+                
+                const msgBadge = document.getElementById('msgBadge');
+                const notifBadge = document.getElementById('notifBadge');
+                
+                if (msgBadge) {
+                    if (unreadMessages > 0) {
+                        msgBadge.textContent = unreadMessages > 9 ? '9+' : unreadMessages;
+                        msgBadge.style.display = 'flex';
+                    } else {
+                        msgBadge.style.display = 'none';
+                    }
+                }
+                
+                if (notifBadge) {
+                    if (unreadNotifications > 0) {
+                        notifBadge.textContent = unreadNotifications > 9 ? '9+' : unreadNotifications;
+                        notifBadge.style.display = 'flex';
+                    } else {
+                        notifBadge.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading unread counts:', error);
+            }
+        }
+
+        function clearSearchInput() { const input = document.getElementById('searchInput'); if (input) input.value = ''; }
 
         async function fetchCurrentUser() {
             const token = localStorage.getItem('access_token');
@@ -446,6 +960,21 @@
                 return await response.json();
             } catch (error) {
                 console.error('Fetch user error:', error);
+                return null;
+            }
+        }
+
+        async function fetchUserProfile(userId) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return null;
+            try {
+                const response = await fetch(`${API_URL}/users/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch profile error:', error);
                 return null;
             }
         }
@@ -464,13 +993,296 @@
             }
         }
 
+        async function fetchUserPosts(userId) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/posts/user/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch posts error:', error);
+                return [];
+            }
+        }
+
+        async function uploadPostFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_URL}/upload/file`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Upload failed');
+            }
+            return await response.json();
+        }
+
+        async function createPost(content, skillTag, attachments = null) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return false;
+            try {
+                const body = { 
+                    content: content, 
+                    skill_tag: skillTag || null
+                };
+                
+                if (attachments) {
+                    body.attachment_url = attachments.url;
+                    body.attachment_name = attachments.name;
+                    body.attachment_type = attachments.type;
+                    body.attachment_size = attachments.size;
+                }
+                
+                const response = await fetch(`${API_URL}/posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                return response.ok;
+            } catch (error) { return false; }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm('Delete this post?')) return;
+            const token = localStorage.getItem('access_token');
+            try {
+                const response = await fetch(`${API_URL}/posts/${postId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    showToast('✅ Post deleted');
+                    await renderPosts();
+                } else {
+                    showToast('❌ Delete failed');
+                }
+            } catch (error) {
+                showToast('❌ Delete failed');
+            }
+        }
+
+        async function loadAllSkills() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/skills`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                allSkillsList = await response.json();
+                return allSkillsList;
+            } catch (error) {
+                console.error('Fetch skills error:', error);
+                return [];
+            }
+        }
+
+        function showSkillDropdown(filter = '') {
+            const dropdown = document.getElementById('skillDropdown');
+            if (!dropdown) return;
+            
+            const filteredSkills = allSkillsList.filter(skill => 
+                skill.name.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filteredSkills.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            dropdown.innerHTML = filteredSkills.map(skill => `
+                <div class="skill-dropdown-item" data-skill="${escapeHtml(skill.name)}">
+                    ${skill.icon ? skill.icon + ' ' : '📚 '}${escapeHtml(skill.name)}
+                </div>
+            `).join('');
+            
+            document.querySelectorAll('.skill-dropdown-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const skillInput = document.getElementById('postSkillTag');
+                    if (skillInput) {
+                        skillInput.value = item.dataset.skill;
+                    }
+                    dropdown.style.display = 'none';
+                });
+            });
+            
+            dropdown.style.display = 'block';
+        }
+
+        function hideSkillDropdown() {
+            setTimeout(() => {
+                const dropdown = document.getElementById('skillDropdown');
+                if (dropdown) dropdown.style.display = 'none';
+            }, 200);
+        }
+
+        function setupSkillAutocomplete() {
+            const skillInput = document.getElementById('postSkillTag');
+            if (!skillInput) return;
+            
+            skillInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (value.length > 0) {
+                    showSkillDropdown(value);
+                } else {
+                    const dropdown = document.getElementById('skillDropdown');
+                    if (dropdown) dropdown.style.display = 'none';
+                }
+            });
+            
+            skillInput.addEventListener('focus', () => {
+                if (skillInput.value.length > 0) {
+                    showSkillDropdown(skillInput.value);
+                } else {
+                    showSkillDropdown('');
+                }
+            });
+            
+            skillInput.addEventListener('blur', hideSkillDropdown);
+        }
+
+        function updateCharCount() {
+            const content = document.getElementById('postContent');
+            if (!content) return;
+            const count = content.value.length;
+            const charCountSpan = document.getElementById('charCount');
+            if (charCountSpan) {
+                charCountSpan.textContent = `${count}/500`;
+                if (count > 500) {
+                    charCountSpan.style.color = 'var(--red)';
+                } else if (count > 450) {
+                    charCountSpan.style.color = 'var(--yellow)';
+                } else {
+                    charCountSpan.style.color = 'var(--text-light)';
+                }
+            }
+        }
+
+        async function handleAddPost(event) {
+            event.preventDefault();
+            const content = document.getElementById('postContent').value.trim();
+            const skillTag = document.getElementById('postSkillTag').value.trim();
+            const submitBtn = document.getElementById('submitPostBtn');
+            
+            if (!content && !selectedPostFile) {
+                showToast('Please write something or attach a file');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div style="width:14px;height:14px;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></div> Posting...';
+            
+            let attachmentResult = null;
+            
+            if (selectedPostFile) {
+                try {
+                    attachmentResult = await uploadPostFile(selectedPostFile);
+                } catch (error) {
+                    showToast('❌ File upload failed');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Post';
+                    return;
+                }
+            }
+            
+            const success = await createPost(
+                content || (attachmentResult ? `📎 ${attachmentResult.name}` : ''),
+                skillTag,
+                attachmentResult
+            );
+            
+            if (success) {
+                document.getElementById('postContent').value = '';
+                document.getElementById('postSkillTag').value = '';
+                document.getElementById('postFilePreview').style.display = 'none';
+                document.getElementById('postFileInput').value = '';
+                selectedPostFile = null;
+                updateCharCount();
+                showToast('✅ Post published!');
+                await renderPosts();
+            } else { 
+                showToast('❌ Failed to post'); 
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Post';
+        }
+
         function formatDate(dateString) {
             if (!dateString) return 'Unknown';
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            return date.toLocaleDateString();
         }
 
-        function updateUI(user, allSkills) {
+        async function renderPosts() {
+            const posts = await fetchUserPosts(viewingUserId);
+            const container = document.getElementById('userPostsList');
+            const currentUser = await fetchCurrentUser();
+            const isOwnProfile = viewingUserId === currentUser?.id;
+            
+            if (!posts || posts.length === 0) {
+                container.innerHTML = '<div class="empty-state">📝 No posts yet.</div>';
+                return;
+            }
+            
+            container.innerHTML = posts.map(post => {
+                let attachmentHtml = '';
+                if (post.attachment_url && post.attachment_name) {
+                    attachmentHtml = `
+                        <a href="${post.attachment_url}" download="${escapeHtml(post.attachment_name)}" class="attachment-link">
+                            📎 ${escapeHtml(post.attachment_name)}
+                        </a>
+                    `;
+                }
+                
+                return `
+                    <div class="post-card">
+                        <div class="post-header">
+                            <div class="post-user-info">
+                                <div class="post-avatar-small">${(post.username || 'U').slice(0,2).toUpperCase()}</div>
+                                <div class="post-user-details">
+                                    <div class="post-author-name">${escapeHtml(post.username || 'User')}</div>
+                                    <div class="post-date">${formatDate(post.created_at)}</div>
+                                </div>
+                            </div>
+                            <div class="post-right">
+                                ${post.skill_tag ? `<span class="post-skill-tag">#${escapeHtml(post.skill_tag)}</span>` : ''}
+                                ${isOwnProfile ? `<button class="delete-post-btn" onclick="deletePost('${post.id}')">🗑️</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="post-content">${escapeHtml(post.content)}</div>
+                        ${attachmentHtml}
+                        <div class="post-stats">
+                            <span>❤️ ${post.likes_count || 0} likes</span>
+                            <span>💬 ${post.comment_count || 0} comments</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateUI(user, allSkills, userPosts, isOwnProfile) {
             const skillMap = {};
             allSkills.forEach(skill => { skillMap[skill.name] = skill; });
 
@@ -518,6 +1330,20 @@
                 const adminLink = document.getElementById('adminLink');
                 if (adminLink) adminLink.style.display = 'flex';
             }
+
+            const editBtn = document.getElementById('editProfileBtn');
+            if (editBtn) {
+                editBtn.style.display = isOwnProfile ? 'block' : 'none';
+            }
+
+            renderPosts();
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // Edit Profile functions
@@ -557,10 +1383,7 @@
                 if (response.ok) {
                     showToast('✅ Profile updated successfully!');
                     closeEditModal();
-                    // Refresh profile data
-                    const user = await fetchCurrentUser();
-                    const allSkills = await fetchAllSkills();
-                    updateUI(user, allSkills);
+                    location.reload();
                 } else {
                     const error = await response.json();
                     showToast('❌ Update failed: ' + (error.detail || 'Unknown error'));
@@ -595,6 +1418,12 @@
             if (overlay) overlay.classList.toggle('show');
         }
 
+        window.deletePost = deletePost;
+        window.toggleNotificationDropdown = toggleNotificationDropdown;
+        window.handleNotificationClick = handleNotificationClick;
+        window.markAllNotificationsRead = markAllNotificationsRead;
+        window.loadUnreadCounts = loadUnreadCounts;
+
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('access_token');
             if (!token) {
@@ -602,24 +1431,80 @@
                 return;
             }
 
-            const user = await fetchCurrentUser();
-            if (!user) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('id');
+            
+            const currentUser = await fetchCurrentUser();
+            if (!currentUser) {
                 localStorage.removeItem('access_token');
                 window.location.href = 'index.html';
                 return;
             }
-
-            const allSkills = await fetchAllSkills();
-            updateUI(user, allSkills);
             
-            // Setup edit button
+            let profileUser;
+            let isOwnProfile = false;
+            
+            if (userId && userId !== currentUser.id) {
+                viewingUserId = userId;
+                profileUser = await fetchUserProfile(userId);
+                isOwnProfile = false;
+            } else {
+                viewingUserId = currentUser.id;
+                profileUser = currentUser;
+                isOwnProfile = true;
+            }
+            
+            if (!profileUser) {
+                showToast('User not found');
+                setTimeout(() => window.location.href = 'dashboard.html', 1500);
+                return;
+            }
+            
+            const allSkills = await fetchAllSkills();
+            await loadAllSkills();
+            updateUI(profileUser, allSkills, null, isOwnProfile);
+            
             const editBtn = document.getElementById('editProfileBtn');
-            if (editBtn) {
+            if (editBtn && isOwnProfile) {
                 editBtn.addEventListener('click', async () => {
                     await loadEditForm();
                     openEditModal();
                 });
             }
+            
+            const addPostContainer = document.getElementById('addPostContainer');
+            const postForm = document.getElementById('addPostForm');
+            const postContent = document.getElementById('postContent');
+            const postFileInput = document.getElementById('postFileInput');
+            
+            if (addPostContainer && isOwnProfile) {
+                addPostContainer.style.display = 'block';
+                if (postForm) postForm.addEventListener('submit', handleAddPost);
+                if (postContent) postContent.addEventListener('input', updateCharCount);
+                
+                if (postFileInput) {
+                    postFileInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        
+                        if (file.size > 10 * 1024 * 1024) {
+                            showToast('❌ File too large. Max 10MB');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        selectedPostFile = file;
+                        const preview = document.getElementById('postFilePreview');
+                        preview.style.display = 'block';
+                        preview.innerHTML = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                    });
+                }
+                
+                setupSkillAutocomplete();
+                updateCharCount();
+            }
+            
+            await loadUnreadCounts();
         });
 
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');

@@ -14,6 +14,93 @@
         rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="style.css" rel="stylesheet" />
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+        
+        // Your Firebase config (REPLACE WITH YOUR ACTUAL CONFIG)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+        
+        // Make functions available globally
+        window.requestNotificationPermission = async function() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    console.log('Notification permission granted');
+                    
+                    // Get FCM token
+                    const token = await getToken(messaging, {
+                        vapidKey: "YOUR_VAPID_KEY" // Get from Firebase Console → Project Settings → Cloud Messaging
+                    });
+                    
+                    console.log('FCM Token:', token);
+                    
+                    // Send token to your backend
+                    const apiUrl = window.API_CONFIG?.BASE_URL || 'https://skillswapph-production.up.railway.app/api/v1';
+                    const authToken = localStorage.getItem('access_token');
+                    
+                    const response = await fetch(`${apiUrl}/fcm/register-token`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ token: token })
+                    });
+                    
+                    if (response.ok) {
+                        console.log('Token registered successfully');
+                        showToast('✅ Notifications enabled!');
+                    }
+                } else {
+                    console.log('Notification permission denied');
+                }
+            } catch (error) {
+                console.error('Error getting permission:', error);
+            }
+        };
+        
+        // Handle foreground messages
+        onMessage(messaging, (payload) => {
+            console.log('Message received:', payload);
+            showToast(`🔔 ${payload.notification?.title || 'New notification'}: ${payload.notification?.body || ''}`);
+            // Refresh conversations and messages if needed
+            if (window.currentTab === 'conversations') {
+                renderConversations();
+            }
+            if (window.currentChatUserId) {
+                fetchMessages(window.currentChatUserId).then(data => {
+                    window.chatHistory = data.messages || [];
+                    renderChatMessages();
+                });
+            }
+        });
+        
+        // Auto-request permission when page loads (only if user is logged in)
+        if (localStorage.getItem('access_token')) {
+            // Small delay to ensure page is ready
+            setTimeout(() => {
+                if (Notification.permission === 'default') {
+                    window.requestNotificationPermission();
+                }
+            }, 2000);
+        }
+    </script>
+
     <style>
         * {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -22,8 +109,15 @@
 
         :root {
             --blue: #2563eb;
+            --blue-dark: #1d4ed8;
             --blue-light: #eff6ff;
             --blue-mid: #dbeafe;
+            --green: #10b981;
+            --green-light: #dcfce7;
+            --yellow: #f59e0b;
+            --yellow-light: #fef9c3;
+            --red: #ef4444;
+            --red-light: #fee2e2;
             --text: #0f172a;
             --text-mid: #475569;
             --text-light: #94a3b8;
@@ -46,6 +140,19 @@
         .brand { display: flex; align-items: center; gap: 10px; min-width: 160px; }
         .brand-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .brand-name { font-size: 1rem; font-weight: 800; color: var(--text); white-space: nowrap; }
+        .search-bar {
+            flex: 1;
+            max-width: 380px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 6px 12px;
+        }
+        .search-bar:focus-within { border-color: var(--blue); background: white; }
+        .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 0.8rem; }
         .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
         .nav-btn {
             width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--border);
@@ -68,7 +175,7 @@
         .nav-link {
             display: flex; align-items: center; gap: 10px; padding: 9px 12px;
             border-radius: 10px; font-size: 0.85rem; font-weight: 500;
-            color: var(--text-mid); cursor: pointer; text-decoration: none; transition: all 0.15s;
+            color: var(--text-mid); cursor: pointer; text-decoration: none;
         }
         .nav-link:hover { background: var(--bg); color: var(--text); }
         .nav-link.active { background: var(--blue-light); color: var(--blue); font-weight: 700; }
@@ -130,14 +237,14 @@
         .message-preview { font-size: 0.8rem; color: var(--text-mid); margin-top: 4px; }
         .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
 
-        .connected-list {
+        .connected-list, .sessions-list {
             background: white;
             border-radius: 14px;
             border: 1.5px solid var(--border);
             max-height: 70vh;
             overflow-y: auto;
         }
-        .connected-item {
+        .connected-item, .session-item {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -146,9 +253,9 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        .connected-item:last-child { border-bottom: none; }
-        .connected-item:hover { background: var(--blue-light); }
-        .connected-avatar {
+        .connected-item:last-child, .session-item:last-child { border-bottom: none; }
+        .connected-item:hover, .session-item:hover { background: var(--blue-light); }
+        .connected-avatar, .session-avatar {
             width: 40px;
             height: 40px;
             border-radius: 12px;
@@ -160,9 +267,36 @@
             font-weight: 700;
             font-size: 0.9rem;
         }
-        .connected-info { flex: 1; }
-        .connected-name { font-size: 0.85rem; font-weight: 700; color: var(--text); }
-        .connected-skill { font-size: 0.7rem; color: var(--text-mid); }
+        .connected-info, .session-info { flex: 1; }
+        .connected-name, .session-name { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+        .connected-skill, .session-skill { font-size: 0.7rem; color: var(--text-mid); }
+        .session-date { font-size: 0.65rem; color: var(--blue); margin-top: 2px; }
+        .session-status {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+        .status-pending { background: var(--yellow-light); color: #a16207; }
+        .status-confirmed { background: var(--green-light); color: #16a34a; }
+        .status-completed { background: var(--blue-mid); color: var(--blue); }
+        .status-cancelled { background: var(--red-light); color: var(--red); }
+        .session-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .session-action-btn {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-confirm { background: var(--green-light); color: #16a34a; }
+        .btn-confirm:hover { background: var(--green); color: white; }
+        .btn-cancel { background: var(--red-light); color: var(--red); }
+        .btn-cancel:hover { background: var(--red); color: white; }
 
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
@@ -186,10 +320,29 @@
         .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 16px; font-size: 0.75rem; word-wrap: break-word; }
         .chat-message.sent .chat-bubble { background: var(--blue); color: white; border-bottom-right-radius: 4px; }
         .chat-message.received .chat-bubble { background: white; border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+        .attachment-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 8px;
+            margin-top: 6px;
+            font-size: 0.7rem;
+            text-decoration: none;
+            color: inherit;
+        }
+        .attachment-link:hover { text-decoration: underline; }
         .chat-time { font-size: 0.55rem; color: var(--text-light); margin-top: 2px; margin-left: 8px; margin-right: 8px; }
-        .chat-input-area { display: flex; gap: 10px; margin-top: 8px; }
-        .chat-input-area input { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.75rem; outline: none; }
-        .chat-input-area button { padding: 10px 16px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
+        .chat-input-area { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+        .chat-input-area input[type="text"] { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.75rem; outline: none; min-width: 120px; }
+        .chat-input-area button { padding: 8px 14px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 0.7rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .chat-input-area button:hover { background: var(--blue-dark); }
+        .attach-btn { background: #64748b !important; }
+        .attach-btn:hover { background: #475569 !important; }
+
+        .propose-session-btn { background: #64748b !important; }
+        .propose-session-btn:hover { background: #475569 !important; }
 
         #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #0f172a; color: white; padding: 8px 16px; border-radius: 10px; font-size: 0.7rem; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; }
         #toast.show { transform: translateX(-50%) translateY(0); }
@@ -207,6 +360,9 @@
             .modal-container { width: 95%; margin: 10px; }
             .message-card { padding: 12px 14px; gap: 10px; }
             .message-avatar { width: 40px; height: 40px; font-size: 0.85rem; }
+            .session-actions { flex-direction: column; }
+            .chat-input-area { flex-wrap: wrap; }
+            .chat-input-area button { padding: 6px 12px; font-size: 0.65rem; }
         }
     </style>
 </head>
@@ -216,6 +372,7 @@
     <div id="toast"></div>
     <div id="navOverlay" onclick="toggleSidebar()"></div>
 
+    <!-- Chat Modal -->
     <div class="modal-overlay" id="chatModal">
         <div class="modal-container">
             <div class="modal-header">
@@ -226,8 +383,33 @@
                 <div class="chat-messages" id="chatMessages"></div>
                 <div class="chat-input-area">
                     <input type="text" id="chatInput" placeholder="Type a message..." />
-                    <button onclick="sendChatMessage()">Send</button>
+                    <input type="file" id="fileInput" style="display: none;" />
+                    <button type="button" class="attach-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+                    <button type="button" onclick="sendChatMessage()">Send</button>
+                    <button type="button" id="proposeSessionBtn" class="propose-session-btn" onclick="openProposeSessionModal()">📅 Propose Session</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Propose Session Modal -->
+    <div class="modal-overlay" id="proposeSessionModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>📅 Propose a Session</h3>
+                <button class="modal-close" onclick="closeProposeSessionModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <label style="font-size:0.7rem; font-weight:600;">Skill / Topic</label>
+                <input type="text" id="sessionSkill" placeholder="e.g., React, Python, UI Design" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:10px; margin-bottom:15px;" />
+                
+                <label style="font-size:0.7rem; font-weight:600;">Date & Time</label>
+                <input type="datetime-local" id="sessionDateTime" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:10px; margin-bottom:15px;" />
+                
+                <label style="font-size:0.7rem; font-weight:600;">Notes (optional)</label>
+                <textarea id="sessionNotes" rows="3" placeholder="Any additional details..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:10px; margin-bottom:15px;"></textarea>
+                
+                <button type="button" onclick="submitSessionProposal()" style="width:100%; padding:10px; background:var(--blue); color:white; border:none; border-radius:10px; font-weight:600; cursor:pointer;">Propose Session</button>
             </div>
         </div>
     </div>
@@ -235,6 +417,7 @@
     <nav class="topnav">
         <button class="hamburger nav-btn" onclick="toggleSidebar()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="2" y1="5" x2="16" y2="5" /><line x1="2" y1="9" x2="16" y2="9" /><line x1="2" y1="13" x2="16" y2="13" /></svg></button>
         <div class="brand"><div class="brand-logo"><svg width="20" height="20" viewBox="0 0 28 28" fill="none"><path d="M7 9l7-5 7 5v10l-7 5-7-5V9z" fill="white" opacity="0.9" /></svg></div><span class="brand-name">SkillSwap PH</span></div>
+        <div class="search-bar"><svg width="12" height="12" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg><input type="text" id="searchInput" placeholder="Search users..." oninput="handleSearch(this.value)" /><span id="clearSearch" style="cursor:pointer;color:#94a3b8;display:none;" onclick="clearSearchInput()">✕</span></div>
         <div class="nav-actions"><a href="dashboard.html" class="nav-btn"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg></a>
             <div class="avatar-btn" id="userAvatar">JD</div>
         </div>
@@ -263,6 +446,7 @@
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('conversations')">Conversations</button>
                 <button class="tab-btn" onclick="switchTab('connections')">Connections</button>
+                <button class="tab-btn" onclick="switchTab('sessions')">📅 Sessions</button>
             </div>
 
             <div id="conversationsTab">
@@ -271,6 +455,10 @@
 
             <div id="connectionsTab" style="display: none;">
                 <div class="connected-list" id="connectionsList"><div class="empty-state">Loading connections...</div></div>
+            </div>
+
+            <div id="sessionsTab" style="display: none;">
+                <div class="sessions-list" id="sessionsList"><div class="empty-state">Loading sessions...</div></div>
             </div>
         </main>
     </div>
@@ -282,7 +470,16 @@
         let chatHistory = [];
         let currentTab = 'conversations';
         let allConnections = [];
+        let allSessions = [];
         let refreshInterval = null;
+
+        // Make variables available globally for Firebase
+        window.currentTab = currentTab;
+        window.currentChatUserId = currentChatUserId;
+        window.chatHistory = chatHistory;
+        window.renderConversations = renderConversations;
+        window.fetchMessages = fetchMessages;
+        window.renderChatMessages = renderChatMessages;
 
         function showToast(msg, duration = 3000) {
             const t = document.getElementById('toast');
@@ -293,17 +490,27 @@
 
         function switchTab(tab) {
             currentTab = tab;
+            window.currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
             if (tab === 'conversations') {
-                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
                 document.getElementById('conversationsTab').style.display = 'block';
                 document.getElementById('connectionsTab').style.display = 'none';
+                document.getElementById('sessionsTab').style.display = 'none';
                 renderConversations();
-            } else {
-                document.querySelector('.tab-btn:last-child').classList.add('active');
+            } else if (tab === 'connections') {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
                 document.getElementById('conversationsTab').style.display = 'none';
                 document.getElementById('connectionsTab').style.display = 'block';
+                document.getElementById('sessionsTab').style.display = 'none';
                 loadConnections();
+            } else {
+                document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+                document.getElementById('conversationsTab').style.display = 'none';
+                document.getElementById('connectionsTab').style.display = 'none';
+                document.getElementById('sessionsTab').style.display = 'block';
+                loadSessions();
             }
         }
 
@@ -382,6 +589,70 @@
             }
         }
 
+        async function fetchSessions() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/sessions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch sessions error:', error);
+                return [];
+            }
+        }
+
+        async function createSession(receiverId, skillTag, scheduledDate, notes) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return false;
+            try {
+                const response = await fetch(`${API_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        receiver_id: receiverId,
+                        skill_tag: skillTag,
+                        scheduled_date: scheduledDate,
+                        notes: notes
+                    })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    showToast(error.detail || 'Failed to create session');
+                    return false;
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Create session error:', error);
+                return false;
+            }
+        }
+
+        async function updateSessionStatus(sessionId, status) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return false;
+            try {
+                const response = await fetch(`${API_URL}/sessions/${sessionId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: status })
+                });
+                if (!response.ok) return false;
+                return true;
+            } catch (error) {
+                console.error('Update session error:', error);
+                return false;
+            }
+        }
+
         async function sendMessage(receiverId, message) {
             const token = localStorage.getItem('access_token');
             if (!token) return false;
@@ -399,6 +670,46 @@
                 console.error('Send message error:', error);
                 return false;
             }
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_URL}/upload/file`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Upload failed');
+            }
+            return await response.json();
+        }
+
+        async function sendMessageWithAttachment(receiverId, fileName, fileUrl, fileType, fileSize) {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_URL}/messages/send`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    receiver_id: receiverId,
+                    message: `📎 ${fileName}`,
+                    attachment_url: fileUrl,
+                    attachment_name: fileName,
+                    attachment_type: fileType,
+                    attachment_size: fileSize
+                })
+            });
+            
+            if (!response.ok) throw new Error('Failed to send message');
+            return await response.json();
         }
 
         async function loadConnections() {
@@ -446,15 +757,83 @@
             }
             
             container.innerHTML = allConnections.map(conn => `
-                <div class="connected-item" onclick="openChat('${conn.user_id}', '${conn.username.replace(/'/g, "\\'")}')">
+                <div class="connected-item" onclick="openChat('${conn.user_id}', '${(conn.username || 'User').replace(/'/g, "\\'")}')">
                     <div class="connected-avatar">${(conn.username || 'U').slice(0, 2).toUpperCase()}</div>
                     <div class="connected-info">
                         <div class="connected-name">${conn.username || 'User'}</div>
                         <div class="connected-skill">${conn.source === 'match' ? `Match Score: ${conn.match_score}%` : `Exchange: ${conn.status || 'Connected'}`}</div>
                     </div>
-                    <button class="btn-message" style="padding:6px 12px; background:var(--blue); color:white; border:none; border-radius:20px; font-size:0.7rem; cursor:pointer;">Message</button>
+                    <button class="session-action-btn btn-confirm" style="padding:6px 12px;" onclick="event.stopPropagation(); openChat('${conn.user_id}', '${(conn.username || 'User').replace(/'/g, "\\'")}')">Message</button>
                 </div>
             `).join('');
+        }
+
+        async function loadSessions() {
+            const container = document.getElementById('sessionsList');
+            container.innerHTML = '<div class="empty-state">Loading sessions...</div>';
+            
+            const sessions = await fetchSessions();
+            const currentUser = await fetchCurrentUser();
+            const userId = currentUser?.id;
+            
+            allSessions = sessions;
+            
+            if (!allSessions.length) {
+                container.innerHTML = '<div class="empty-state">📅 No sessions yet. Propose a session from chat!</div>';
+                return;
+            }
+            
+            container.innerHTML = allSessions.map(session => {
+                const otherPerson = session.is_mine ? session.receiver_name : session.proposer_name;
+                const otherId = session.is_mine ? session.receiver_id : session.proposer_id;
+                const statusClass = session.status === 'pending' ? 'status-pending' : 
+                                   session.status === 'confirmed' ? 'status-confirmed' :
+                                   session.status === 'completed' ? 'status-completed' : 'status-cancelled';
+                const statusText = session.status.charAt(0).toUpperCase() + session.status.slice(1);
+                const sessionDate = new Date(session.scheduled_date);
+                const formattedDate = sessionDate.toLocaleString();
+                
+                let actionButtons = '';
+                if (session.status === 'pending' && !session.is_mine) {
+                    actionButtons = `
+                        <div class="session-actions">
+                            <button class="session-action-btn btn-confirm" onclick="event.stopPropagation(); handleSessionAction(${session.id}, 'confirmed')">Confirm</button>
+                            <button class="session-action-btn btn-cancel" onclick="event.stopPropagation(); handleSessionAction(${session.id}, 'cancelled')">Cancel</button>
+                        </div>
+                    `;
+                } else if (session.status === 'confirmed' && session.is_mine) {
+                    actionButtons = `
+                        <div class="session-actions">
+                            <button class="session-action-btn btn-confirm" onclick="event.stopPropagation(); handleSessionAction(${session.id}, 'completed')">Mark Complete</button>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="session-item" onclick="openChat('${otherId}', '${otherPerson.replace(/'/g, "\\'")}')">
+                        <div class="session-avatar">${(otherPerson || 'U').slice(0, 2).toUpperCase()}</div>
+                        <div class="session-info">
+                            <div class="session-name">${otherPerson}</div>
+                            <div class="session-skill">📚 ${session.skill_tag || 'General'}</div>
+                            <div class="session-date">📅 ${formattedDate}</div>
+                        </div>
+                        <div>
+                            <span class="session-status ${statusClass}">${statusText}</span>
+                        </div>
+                        ${actionButtons}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function handleSessionAction(sessionId, status) {
+            const success = await updateSessionStatus(sessionId, status);
+            if (success) {
+                showToast(`✅ Session ${status}!`);
+                await loadSessions();
+            } else {
+                showToast('❌ Failed to update session');
+            }
         }
 
         function formatDate(dateString) {
@@ -483,7 +862,7 @@
             }
             
             container.innerHTML = conversations.map(conv => `
-                <div class="message-card" onclick="openChat('${conv.user_id}', '${conv.username.replace(/'/g, "\\'")}')">
+                <div class="message-card" onclick="openChat('${conv.user_id}', '${(conv.username || 'User').replace(/'/g, "\\'")}')">
                     <div class="message-avatar">${(conv.username || 'U').slice(0, 2).toUpperCase()}</div>
                     <div class="message-content">
                         <div class="message-sender">
@@ -498,29 +877,43 @@
         }
 
         async function openChat(userId, userName) {
+            if (!userId) {
+                showToast('Invalid user');
+                return;
+            }
+            
             currentChatUserId = userId;
+            window.currentChatUserId = userId;
             currentChatUser = userName;
             
-            const data = await fetchMessages(userId);
-            chatHistory = data.messages || [];
+            try {
+                const data = await fetchMessages(userId);
+                chatHistory = data.messages || [];
+                window.chatHistory = chatHistory;
+            } catch (error) {
+                chatHistory = [];
+            }
             
             document.getElementById('chatModalTitle').textContent = `💬 Chat with ${userName}`;
             renderChatMessages();
             document.getElementById('chatModal').classList.add('show');
             
-            // Clear any existing refresh interval
             if (refreshInterval) clearInterval(refreshInterval);
             
-            // Refresh messages every 3 seconds while chat is open
             refreshInterval = setInterval(async () => {
                 if (currentChatUserId && document.getElementById('chatModal').classList.contains('show')) {
-                    const newData = await fetchMessages(currentChatUserId);
-                    if (JSON.stringify(newData.messages) !== JSON.stringify(chatHistory)) {
-                        chatHistory = newData.messages || [];
-                        renderChatMessages();
-                        if (currentTab === 'conversations') {
-                            await renderConversations();
+                    try {
+                        const newData = await fetchMessages(currentChatUserId);
+                        if (JSON.stringify(newData.messages) !== JSON.stringify(chatHistory)) {
+                            chatHistory = newData.messages || [];
+                            window.chatHistory = chatHistory;
+                            renderChatMessages();
+                            if (currentTab === 'conversations') {
+                                await renderConversations();
+                            }
                         }
+                    } catch (e) {
+                        console.error('Refresh error:', e);
                     }
                 }
             }, 3000);
@@ -534,14 +927,27 @@
                 return;
             }
             
-            container.innerHTML = chatHistory.map(msg => `
-                <div class="chat-message ${msg.is_mine ? 'sent' : 'received'}">
-                    <div class="chat-bubble">${escapeHtml(msg.message)}</div>
-                    <div class="chat-time">${formatDate(msg.created_at)}</div>
-                </div>
-            `).join('');
+            container.innerHTML = chatHistory.map(msg => {
+                let attachmentHtml = '';
+                if (msg.attachment_url && msg.attachment_name) {
+                    attachmentHtml = `
+                        <a href="${msg.attachment_url}" target="_blank" class="attachment-link" download>
+                            📎 ${escapeHtml(msg.attachment_name)}
+                        </a>
+                    `;
+                }
+                
+                return `
+                    <div class="chat-message ${msg.is_mine ? 'sent' : 'received'}">
+                        <div class="chat-bubble">
+                            ${escapeHtml(msg.message || '')}
+                            ${attachmentHtml}
+                        </div>
+                        <div class="chat-time">${formatDate(msg.created_at)}</div>
+                    </div>
+                `;
+            }).join('');
             
-            // Scroll to bottom
             setTimeout(() => {
                 container.scrollTop = container.scrollHeight;
             }, 50);
@@ -552,25 +958,33 @@
             const text = input.value.trim();
             if (!text || !currentChatUserId) return;
             
-            // Disable send button temporarily
-            const sendBtn = document.querySelector('#chatModal .chat-input-area button');
-            sendBtn.disabled = true;
-            sendBtn.textContent = 'Sending...';
+            const sendBtns = document.querySelectorAll('#chatModal .chat-input-area button');
+            let sendBtn = null;
+            for (let btn of sendBtns) {
+                if (btn.textContent === 'Send') {
+                    sendBtn = btn;
+                    break;
+                }
+            }
+            
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.textContent = 'Sending...';
+            }
             
             const success = await sendMessage(currentChatUserId, text);
             
             if (success) {
                 input.value = '';
-                // Refresh messages
                 const data = await fetchMessages(currentChatUserId);
                 chatHistory = data.messages || [];
+                window.chatHistory = chatHistory;
                 renderChatMessages();
                 
-                // Refresh conversation list to show updated preview
                 if (currentTab === 'conversations') {
                     conversations = await fetchConversations();
                     renderConversations();
-                } else {
+                } else if (currentTab === 'connections') {
                     loadConnections();
                 }
                 
@@ -579,18 +993,139 @@
                 showToast('❌ Failed to send message');
             }
             
-            sendBtn.disabled = false;
-            sendBtn.textContent = 'Send';
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            }
+        }
+
+        // File upload handler
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('❌ File too large. Max 10MB');
+                    e.target.value = '';
+                    return;
+                }
+                
+                if (!currentChatUserId) {
+                    showToast('Please select a conversation first');
+                    e.target.value = '';
+                    return;
+                }
+                
+                showToast('📤 Uploading file...');
+                
+                try {
+                    const result = await uploadFile(file);
+                    
+                    await sendMessageWithAttachment(
+                        currentChatUserId, 
+                        result.name, 
+                        result.url,
+                        result.type,
+                        result.size
+                    );
+                    
+                    showToast('✅ File uploaded and sent!');
+                    
+                    const data = await fetchMessages(currentChatUserId);
+                    chatHistory = data.messages || [];
+                    window.chatHistory = chatHistory;
+                    renderChatMessages();
+                    
+                    if (currentTab === 'conversations') {
+                        conversations = await fetchConversations();
+                        renderConversations();
+                    }
+                    
+                    e.target.value = '';
+                } catch (error) {
+                    showToast('❌ Upload failed: ' + error.message);
+                }
+            });
+        }
+
+        function openProposeSessionModal() {
+            if (!currentChatUserId) {
+                showToast('Please select a conversation first');
+                return;
+            }
+            document.getElementById('sessionSkill').value = '';
+            document.getElementById('sessionDateTime').value = '';
+            document.getElementById('sessionNotes').value = '';
+            document.getElementById('proposeSessionModal').classList.add('show');
+        }
+
+        function closeProposeSessionModal() {
+            document.getElementById('proposeSessionModal').classList.remove('show');
+        }
+
+        async function submitSessionProposal() {
+            if (!currentChatUserId) {
+                showToast('No conversation selected');
+                closeProposeSessionModal();
+                return;
+            }
+            
+            const skill = document.getElementById('sessionSkill').value.trim();
+            const dateTime = document.getElementById('sessionDateTime').value;
+            const notes = document.getElementById('sessionNotes').value.trim();
+            
+            if (!skill) {
+                showToast('Please enter a skill/topic');
+                return;
+            }
+            if (!dateTime) {
+                showToast('Please select a date and time');
+                return;
+            }
+            
+            const submitBtn = document.querySelector('#proposeSessionModal button:last-child');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Proposing...';
+            }
+            
+            try {
+                const result = await createSession(currentChatUserId, skill, dateTime, notes);
+                
+                if (result) {
+                    showToast('✅ Session proposed!');
+                    closeProposeSessionModal();
+                    
+                    await sendMessage(currentChatUserId, `📅 I proposed a session about "${skill}" on ${new Date(dateTime).toLocaleString()}. Check the Sessions tab!`);
+                    
+                    const data = await fetchMessages(currentChatUserId);
+                    chatHistory = data.messages || [];
+                    window.chatHistory = chatHistory;
+                    renderChatMessages();
+                    
+                    if (currentTab === 'sessions') {
+                        await loadSessions();
+                    }
+                } else {
+                    showToast('❌ Failed to propose session');
+                }
+            } catch (error) {
+                console.error('Session proposal error:', error);
+                showToast('❌ Failed to propose session');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Propose Session';
+                }
+            }
         }
 
         async function updateUserAvatar() {
             const user = await fetchCurrentUser();
             if (user) {
                 document.getElementById('userAvatar').textContent = (user.username || 'US').slice(0, 2).toUpperCase();
-            } else {
-                const savedEmail = localStorage.getItem('user_email') || 'User';
-                const initial = savedEmail.split('@')[0].slice(0, 2).toUpperCase();
-                document.getElementById('userAvatar').textContent = initial;
             }
         }
 
@@ -609,11 +1144,46 @@
             }
             currentChatUser = null;
             currentChatUserId = null;
+            window.currentChatUserId = null;
         }
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('navOverlay').classList.toggle('show');
+        }
+
+        function handleSearch(val) {
+            if (!val.trim()) {
+                if (currentTab === 'connections') loadConnections();
+                return;
+            }
+            
+            const searchTerm = val.toLowerCase();
+            const filtered = allConnections.filter(conn => 
+                conn.username && conn.username.toLowerCase().includes(searchTerm)
+            );
+            
+            const container = document.getElementById('connectionsList');
+            if (!filtered.length) {
+                container.innerHTML = '<div class="empty-state">No matching connections found</div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(conn => `
+                <div class="connected-item" onclick="openChat('${conn.user_id}', '${(conn.username || 'User').replace(/'/g, "\\'")}')">
+                    <div class="connected-avatar">${(conn.username || 'U').slice(0, 2).toUpperCase()}</div>
+                    <div class="connected-info">
+                        <div class="connected-name">${conn.username || 'User'}</div>
+                        <div class="connected-skill">${conn.source === 'match' ? `Match Score: ${conn.match_score}%` : `Exchange: ${conn.status || 'Connected'}`}</div>
+                    </div>
+                    <button class="session-action-btn btn-confirm" style="padding:6px 12px;" onclick="event.stopPropagation(); openChat('${conn.user_id}', '${(conn.username || 'User').replace(/'/g, "\\'")}')">Message</button>
+                </div>
+            `).join('');
+        }
+
+        function clearSearchInput() {
+            document.getElementById('searchInput').value = '';
+            handleSearch('');
         }
 
         async function logout() {
@@ -624,6 +1194,20 @@
             window.location.href = 'index.html';
         }
 
+        // Make functions global
+        window.switchTab = switchTab;
+        window.openChat = openChat;
+        window.sendChatMessage = sendChatMessage;
+        window.closeChatModal = closeChatModal;
+        window.openProposeSessionModal = openProposeSessionModal;
+        window.closeProposeSessionModal = closeProposeSessionModal;
+        window.submitSessionProposal = submitSessionProposal;
+        window.handleSessionAction = handleSessionAction;
+        window.toggleSidebar = toggleSidebar;
+        window.logout = logout;
+        window.handleSearch = handleSearch;
+        window.clearSearchInput = clearSearchInput;
+
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('access_token');
             if (!token) {
@@ -633,6 +1217,7 @@
             await updateUserAvatar();
             await renderConversations();
             await loadConnections();
+            await loadSessions();
         });
 
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
