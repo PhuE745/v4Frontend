@@ -313,6 +313,23 @@
             margin: 2px 4px 2px 0;
         }
 
+        /* Badges Section */
+        .badge-card {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 10px 14px;
+            text-align: center;
+            min-width: 100px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+            cursor: default;
+        }
+        .badge-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--blue);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+        }
+
         /* Add Post Container */
         .add-post-container {
             padding: 16px 20px;
@@ -438,7 +455,7 @@
         .post-content {
             font-size: 0.85rem;
             color: var(--text-mid);
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             line-height: 1.4;
             padding-left: 50px;
         }
@@ -455,6 +472,63 @@
             margin-top: 8px;
             margin-left: 50px;
         }
+        .post-actions {
+            display: flex;
+            gap: 16px;
+            padding-left: 50px;
+            margin-top: 8px;
+        }
+        .post-action-btn {
+            background: none;
+            border: none;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-mid);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .post-action-btn:hover { color: var(--blue); }
+        .post-action-btn.liked { color: var(--blue); }
+        
+        /* Comments Section */
+        .comments-section {
+            margin-top: 12px;
+            padding-left: 50px;
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 12px;
+        }
+        .comment-item {
+            font-size: 0.7rem;
+            margin-bottom: 8px;
+        }
+        .comment-name { font-weight: 700; color: var(--text); }
+        .comment-text { color: var(--text-mid); }
+        .add-comment {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .comment-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.65rem;
+            outline: none;
+        }
+        .comment-submit {
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.6rem;
+            cursor: pointer;
+        }
+        
         .post-stats {
             display: flex;
             gap: 16px;
@@ -592,9 +666,10 @@
             .search-bar { max-width: 100%; }
             .info-label { width: 100px; }
             .modal-container { width: 95%; }
-            .post-content, .post-stats, .attachment-link { padding-left: 0; margin-left: 0; }
+            .post-content, .post-stats, .attachment-link, .post-actions, .comments-section { padding-left: 0; margin-left: 0; }
             .post-user-info { flex-wrap: wrap; }
             .notification-dropdown { width: 300px; right: -20px; }
+            .badge-card { min-width: 80px; padding: 8px 10px; }
         }
     </style>
 </head>
@@ -725,6 +800,14 @@
             <div class="info-card">
                 <div class="info-title"><span>📚</span> Skills I Want to Learn</div>
                 <div id="needSkillsList"></div>
+            </div>
+
+            <!-- Badges Section -->
+            <div class="info-card">
+                <div class="info-title"><span>🏆</span> Achievements & Badges</div>
+                <div id="badgesList" style="display: flex; flex-wrap: wrap; gap: 12px; min-height: 80px;">
+                    <div class="empty-state" style="padding: 20px;">Loading badges...</div>
+                </div>
             </div>
 
             <!-- Add Post Section (only visible on own profile) -->
@@ -947,6 +1030,88 @@
             }
         }
 
+        // ============ LIKE & COMMENT FUNCTIONS ============
+        
+        async function likePost(postId, btn) {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showToast('Please login to like posts');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/posts/${postId}/like`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to like/unlike post');
+                }
+                
+                const result = await response.json();
+                
+                // Refresh posts to update like count and button state
+                await renderPosts();
+                
+            } catch (error) {
+                console.error('Like error:', error);
+                showToast('❌ Failed to like post');
+            }
+        }
+        
+        async function addComment(postId, inputId) {
+            const comment = document.getElementById(inputId).value.trim();
+            if (!comment) {
+                showToast('Please enter a comment');
+                return;
+            }
+            
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showToast('Please login to comment');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/posts/${postId}/comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ comment: comment })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to add comment');
+                }
+                
+                document.getElementById(inputId).value = '';
+                showToast('✅ Comment added!');
+                
+                // Refresh posts to show new comment
+                await renderPosts();
+                
+            } catch (error) {
+                console.error('Comment error:', error);
+                showToast('❌ Failed to add comment');
+            }
+        }
+        
+        function toggleComments(postId) {
+            const el = document.getElementById(`comments-${postId}`);
+            if (el) {
+                if (el.style.display === 'none' || !el.style.display) {
+                    el.style.display = 'block';
+                } else {
+                    el.style.display = 'none';
+                }
+            }
+        }
+        
+        // ============ END LIKE & COMMENT FUNCTIONS ============
+
         function clearSearchInput() { const input = document.getElementById('searchInput'); if (input) input.value = ''; }
 
         async function fetchCurrentUser() {
@@ -1007,6 +1172,42 @@
                 return [];
             }
         }
+
+        // ============ BADGES FUNCTIONS ============
+        
+        async function fetchBadges() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return [];
+            try {
+                const response = await fetch(`${API_URL}/badges/my-badges`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return [];
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch badges error:', error);
+                return [];
+            }
+        }
+
+        function renderBadges(badges) {
+            const container = document.getElementById('badgesList');
+            
+            if (!badges || badges.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 20px;">✨ No badges yet. Complete exchanges to earn achievements!</div>';
+                return;
+            }
+            
+            container.innerHTML = badges.map(badge => `
+                <div class="badge-card">
+                    <div style="font-size: 2rem;">${badge.icon}</div>
+                    <div style="font-weight: 700; font-size: 0.7rem; margin-top: 5px; color: var(--text);">${escapeHtml(badge.name)}</div>
+                    <div style="font-size: 0.6rem; color: var(--text-light); margin-top: 2px;">${escapeHtml(badge.description)}</div>
+                </div>
+            `).join('');
+        }
+        
+        // ============ END BADGES FUNCTIONS ============
 
         async function uploadPostFile(file) {
             const formData = new FormData();
@@ -1235,6 +1436,18 @@
             return date.toLocaleDateString();
         }
 
+        function renderComments(comments) {
+            if (!comments || !comments.length) {
+                return '<div style="padding:8px 0;color:var(--text-light);">No comments yet. Be the first to comment!</div>';
+            }
+            return comments.map(c => `
+                <div class="comment-item">
+                    <span class="comment-name">${escapeHtml(c.username || 'User')}:</span>
+                    <span class="comment-text">${escapeHtml(c.comment)}</span>
+                </div>
+            `).join('');
+        }
+
         async function renderPosts() {
             const posts = await fetchUserPosts(viewingUserId);
             const container = document.getElementById('userPostsList');
@@ -1256,6 +1469,8 @@
                     `;
                 }
                 
+                const likedClass = post.user_liked ? 'liked' : '';
+                
                 return `
                     <div class="post-card">
                         <div class="post-header">
@@ -1273,16 +1488,27 @@
                         </div>
                         <div class="post-content">${escapeHtml(post.content)}</div>
                         ${attachmentHtml}
-                        <div class="post-stats">
-                            <span>❤️ ${post.likes_count || 0} likes</span>
-                            <span>💬 ${post.comment_count || 0} comments</span>
+                        <div class="post-actions">
+                            <button class="post-action-btn ${likedClass}" onclick="likePost('${post.id}', this)">
+                                ❤️ ${post.likes_count || 0} Like${post.likes_count !== 1 ? 's' : ''}
+                            </button>
+                            <button class="post-action-btn" onclick="toggleComments(${post.id})">
+                                💬 ${post.comment_count || 0} Comment${post.comment_count !== 1 ? 's' : ''}
+                            </button>
+                        </div>
+                        <div id="comments-${post.id}" style="display: none;" class="comments-section">
+                            <div id="comments-list-${post.id}">${renderComments(post.comments || [])}</div>
+                            <div class="add-comment">
+                                <input type="text" id="comment-input-${post.id}" class="comment-input" placeholder="Write a comment...">
+                                <button class="comment-submit" onclick="addComment(${post.id}, 'comment-input-${post.id}')">Post</button>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function updateUI(user, allSkills, userPosts, isOwnProfile) {
+        async function updateUI(user, allSkills, userPosts, isOwnProfile) {
             const skillMap = {};
             allSkills.forEach(skill => { skillMap[skill.name] = skill; });
 
@@ -1336,7 +1562,12 @@
                 editBtn.style.display = isOwnProfile ? 'block' : 'none';
             }
 
+            // Render posts
             renderPosts();
+            
+            // Fetch and render badges
+            const badges = await fetchBadges();
+            renderBadges(badges);
         }
 
         function escapeHtml(text) {
@@ -1419,6 +1650,9 @@
         }
 
         window.deletePost = deletePost;
+        window.likePost = likePost;
+        window.addComment = addComment;
+        window.toggleComments = toggleComments;
         window.toggleNotificationDropdown = toggleNotificationDropdown;
         window.handleNotificationClick = handleNotificationClick;
         window.markAllNotificationsRead = markAllNotificationsRead;
@@ -1462,7 +1696,7 @@
             
             const allSkills = await fetchAllSkills();
             await loadAllSkills();
-            updateUI(profileUser, allSkills, null, isOwnProfile);
+            await updateUI(profileUser, allSkills, null, isOwnProfile);
             
             const editBtn = document.getElementById('editProfileBtn');
             if (editBtn && isOwnProfile) {

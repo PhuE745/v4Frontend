@@ -17,7 +17,6 @@
             color: #333;
         }
 
-        /* Header */
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -44,21 +43,14 @@
             padding: 8px 16px;
             border-radius: 5px;
             cursor: pointer;
-            transition: all 0.3s;
         }
 
-        .btn-logout:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        /* Container */
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        /* Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -85,7 +77,6 @@
             margin-top: 5px;
         }
 
-        /* Tabs */
         .tabs {
             display: flex;
             gap: 10px;
@@ -99,7 +90,6 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            transition: all 0.3s;
         }
 
         .tab-btn.active {
@@ -107,7 +97,6 @@
             color: white;
         }
 
-        /* Tables */
         .table-container {
             background: white;
             border-radius: 10px;
@@ -135,7 +124,6 @@
             background: #f8f9fa;
         }
 
-        /* Buttons */
         .btn-edit, .btn-delete, .btn-make-admin {
             padding: 5px 10px;
             border: none;
@@ -160,7 +148,18 @@
             color: white;
         }
 
-        /* Modal */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .status-pending { background: #ffc107; color: #333; }
+        .status-accepted { background: #667eea; color: white; }
+        .status-completed { background: #28a745; color: white; }
+        .status-cancelled { background: #dc3545; color: white; }
+
         .modal {
             display: none;
             position: fixed;
@@ -182,10 +181,6 @@
             max-width: 500px;
         }
 
-        .modal-content h3 {
-            margin-bottom: 20px;
-        }
-
         .modal-content input, .modal-content select {
             width: 100%;
             padding: 10px;
@@ -201,31 +196,6 @@
             margin-top: 20px;
         }
 
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 50px;
-            font-size: 18px;
-            color: #666;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        /* Form */
         .add-form {
             background: white;
             padding: 20px;
@@ -251,6 +221,22 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -264,7 +250,7 @@
     <div class="container">
         <div id="messageArea"></div>
 
-        <div class="stats-grid" id="statsGrid">
+        <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-number" id="totalUsers">-</div>
                 <div class="stat-label">Total Users</div>
@@ -278,8 +264,8 @@
                 <div class="stat-label">Total Skills</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="avgRating">-</div>
-                <div class="stat-label">Avg Rating</div>
+                <div class="stat-number" id="pendingExchanges">-</div>
+                <div class="stat-label">Pending Exchanges</div>
             </div>
         </div>
 
@@ -289,20 +275,22 @@
             <button class="tab-btn" data-tab="exchanges">🔄 Exchanges</button>
         </div>
 
+        <!-- Users Tab -->
         <div id="usersTab" class="tab-content">
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Exchanges</th><th>Rating</th><th>Actions</th>
+                        <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Exchanges</th><th>Rating</th><th>Actions</th></tr>
                     </thead>
                     <tbody id="usersTable"></tbody>
                 </table>
             </div>
         </div>
 
+        <!-- Skills Tab -->
         <div id="skillsTab" class="tab-content" style="display:none;">
             <div class="add-form">
-                <input type="text" id="newSkillName" placeholder="Skill Name (e.g., Python_Programming)">
+                <input type="text" id="newSkillName" placeholder="Skill Name">
                 <select id="newSkillCategory">
                     <option value="Coding">Coding</option>
                     <option value="Design">Design</option>
@@ -317,45 +305,45 @@
             </div>
             <div class="table-container">
                 <table>
-                    <thead>
-                        <tr><th>ID</th><th>Name</th><th>Category</th><th>Actions</th>
-                    </thead>
+                    <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Actions</th></tr></thead>
                     <tbody id="skillsTable"></tbody>
                 </table>
             </div>
         </div>
 
+        <!-- Exchanges Tab -->
         <div id="exchangesTab" class="tab-content" style="display:none;">
             <div class="table-container">
                 <table>
-                    <thead>
-                        <tr><th>ID</th><th>Requester</th><th>Provider</th><th>Skill</th><th>Status</th><th>Date</th>
-                    </thead>
+                    <thead><tr><th>ID</th><th>Requester</th><th>Provider</th><th>Skill</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
                     <tbody id="exchangesTable"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <!-- Edit User Modal -->
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <h3>Edit User Role</h3>
+            <h3>Edit User</h3>
             <input type="hidden" id="editUserId">
+            <label>Username</label>
+            <input type="text" id="editUsername">
+            <label>Role</label>
             <select id="editRole">
                 <option value="client">Client</option>
                 <option value="admin">Admin</option>
             </select>
             <div class="modal-buttons">
                 <button onclick="closeModal()">Cancel</button>
-                <button onclick="saveRole()" style="background:#667eea;color:white;">Save</button>
+                <button onclick="saveUser()" style="background:#667eea;color:white;">Save</button>
             </div>
         </div>
     </div>
-
+    <script src="config.js"></script>
     <script>
         let token = localStorage.getItem('access_token');
 
-        // Helper functions
         function showMessage(msg, type = 'error') {
             const area = document.getElementById('messageArea');
             area.innerHTML = `<div class="${type}">${msg}</div>`;
@@ -375,7 +363,7 @@
             const response = await fetch(`${API_URL}${endpoint}`, options);
             if (response.status === 401) {
                 showMessage('Session expired. Please login again.', 'error');
-                setTimeout(() => window.location.href = '/', 2000);
+                setTimeout(() => window.location.href = 'index.html', 2000);
                 return null;
             }
             if (!response.ok) {
@@ -400,7 +388,11 @@
             });
         });
 
-        // Load dashboard stats
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Load stats
         async function loadStats() {
             try {
                 const [users, exchanges, skills] = await Promise.all([
@@ -411,6 +403,8 @@
                 document.getElementById('totalUsers').innerText = users?.length || 0;
                 document.getElementById('totalExchanges').innerText = exchanges?.length || 0;
                 document.getElementById('totalSkills').innerText = skills?.length || 0;
+                const pending = exchanges?.filter(e => e.status === 'pending').length || 0;
+                document.getElementById('pendingExchanges').innerText = pending;
             } catch (error) {
                 console.error(error);
             }
@@ -430,6 +424,7 @@
                         <td>${user.total_exchanges || 0}</td>
                         <td>${user.rating_avg || 0}⭐</td>
                         <td>
+                            <button class="btn-edit" onclick="openEditUser('${user.id}', '${user.username}', '${user.role}')">Edit</button>
                             ${user.role !== 'admin' ? `<button class="btn-make-admin" onclick="makeAdmin('${user.id}')">Make Admin</button>` : ''}
                             <button class="btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
                         </td>
@@ -440,7 +435,29 @@
             }
         }
 
-        // Delete user
+        function openEditUser(id, username, role) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editRole').value = role;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        async function saveUser() {
+            const userId = document.getElementById('editUserId').value;
+            const username = document.getElementById('editUsername').value;
+            const role = document.getElementById('editRole').value;
+            
+            try {
+                await apiCall(`/admin/users/${userId}`, 'PUT', { username, role });
+                showMessage('User updated', 'success');
+                closeModal();
+                loadUsers();
+                loadStats();
+            } catch (error) {
+                showMessage(error.message);
+            }
+        }
+
         async function deleteUser(userId) {
             if (!confirm('Delete this user?')) return;
             try {
@@ -453,7 +470,6 @@
             }
         }
 
-        // Make admin
         async function makeAdmin(userId) {
             if (!confirm('Make this user an admin?')) return;
             try {
@@ -474,7 +490,7 @@
                     <tr>
                         <td>${skill.id}</td>
                         <td>${skill.name}</td>
-                        <td>${skill.category}</td>
+                        <td>${skill.category || 'Coding'}</td>
                         <td><button class="btn-delete" onclick="deleteSkill(${skill.id})">Delete</button></td>
                     </tr>
                 `).join('');
@@ -483,7 +499,6 @@
             }
         }
 
-        // Add skill
         async function addSkill() {
             const name = document.getElementById('newSkillName').value;
             const category = document.getElementById('newSkillCategory').value;
@@ -499,7 +514,6 @@
             }
         }
 
-        // Delete skill
         async function deleteSkill(skillId) {
             if (!confirm('Delete this skill?')) return;
             try {
@@ -517,35 +531,73 @@
             try {
                 const exchanges = await apiCall('/exchanges');
                 const tbody = document.getElementById('exchangesTable');
-                tbody.innerHTML = exchanges.map(ex => `
-                    <tr>
-                        <td>${ex.id}</td>
-                        <td>${ex.requester_name || '-'}</td>
-                        <td>${ex.provider_name || '-'}</td>
-                        <td>${ex.skill_name || '-'}</td>
-                        <td><span style="background:${ex.status === 'completed' ? '#28a745' : ex.status === 'accepted' ? '#667eea' : '#ffc107'};color:white;padding:2px 8px;border-radius:20px;">${ex.status}</span></td>
-                        <td>${new Date(ex.scheduled_date).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = exchanges.map(ex => {
+                    let statusClass = '';
+                    if (ex.status === 'pending') statusClass = 'status-pending';
+                    else if (ex.status === 'accepted') statusClass = 'status-accepted';
+                    else if (ex.status === 'completed') statusClass = 'status-completed';
+                    else if (ex.status === 'cancelled') statusClass = 'status-cancelled';
+                    
+                    return `
+                        <tr>
+                            <td>${ex.id}</td>
+                            <td>${ex.requester_name || '-'}</td>
+                            <td>${ex.provider_name || '-'}</td>
+                            <td>${ex.skill_name || '-'}</td>
+                            <td><span class="status-badge ${statusClass}">${ex.status}</span></td>
+                            <td>${ex.scheduled_date ? new Date(ex.scheduled_date).toLocaleDateString() : '-'}</td>
+                            <td>
+                                <select onchange="updateExchangeStatus(${ex.id}, this.value)" style="padding:5px;">
+                                    <option value="pending" ${ex.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="accepted" ${ex.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+                                    <option value="completed" ${ex.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                    <option value="cancelled" ${ex.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                                </select>
+                                <button class="btn-delete" onclick="deleteExchange(${ex.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             } catch (error) {
                 showMessage(error.message);
             }
         }
 
-        // Logout
-        function logout() {
-            localStorage.removeItem('access_token');
-            window.location.href = '/';
+        async function updateExchangeStatus(exchangeId, status) {
+            try {
+                await apiCall(`/admin/exchanges/${exchangeId}/status`, 'PUT', { status });
+                showMessage(`Exchange ${status}`, 'success');
+                loadExchanges();
+                loadStats();
+            } catch (error) {
+                showMessage(error.message);
+            }
         }
 
-        // Check auth and load initial data
+        async function deleteExchange(exchangeId) {
+            if (!confirm('Delete this exchange?')) return;
+            try {
+                await apiCall(`/admin/exchanges/${exchangeId}`, 'DELETE');
+                showMessage('Exchange deleted', 'success');
+                loadExchanges();
+                loadStats();
+            } catch (error) {
+                showMessage(error.message);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = 'index.html';
+        }
+
+        // Initialize
         if (!token) {
-            window.location.href = '/';
+            window.location.href = 'index.html';
         } else {
             loadStats();
             loadUsers();
         }
     </script>
-    <script src="config.js"></script>
 </body>
 </html>
