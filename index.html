@@ -140,6 +140,13 @@
       color: var(--text-light);
     }
 
+    .pin-input {
+      text-align: center;
+      letter-spacing: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
     .btn-primary {
       width: 100%;
       padding: 11px;
@@ -324,6 +331,13 @@
             <p class="error-text" id="pwErr">Password required</p>
           </div>
 
+          <!-- NEW PIN FIELD -->
+          <div class="input-group">
+            <label for="pin">Security PIN (4 digits)</label>
+            <input type="password" id="pin" placeholder="****" maxlength="4" class="pin-input" autocomplete="off" />
+            <p class="error-text" id="pinErr">PIN must be 4 digits</p>
+          </div>
+
           <div class="flex items-center justify-between mt-1">
             <label class="custom-check"><input type="checkbox" id="remember" /><span>Remember me</span></label>
             <a href="forget-password.html" class="text-blue-600 text-xs font-semibold">Forgot Password?</a>
@@ -380,17 +394,21 @@
       else localStorage.removeItem('saved_email');
     }, true);
 
-    // Email/Password login form submission
+    // Login form submission with PIN
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
+      const pin = document.getElementById('pin').value.trim();
+
       const emailErr = document.getElementById('emailErr');
       const pwErr = document.getElementById('pwErr');
+      const pinErr = document.getElementById('pinErr');
 
       emailErr.classList.remove('show');
       pwErr.classList.remove('show');
+      pinErr.classList.remove('show');
 
       let valid = true;
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -399,6 +417,10 @@
       }
       if (!password) {
         pwErr.classList.add('show');
+        valid = false;
+      }
+      if (!pin || !/^\d{4}$/.test(pin)) {
+        pinErr.classList.add('show');
         valid = false;
       }
       if (!valid) return;
@@ -412,7 +434,7 @@
         const response = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, pin })
         });
 
         const data = await response.json();
