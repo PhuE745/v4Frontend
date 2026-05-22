@@ -656,21 +656,40 @@
             cursor: pointer;
         }
 
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
-            .main { margin-left: 0; padding: 16px; }
-            .hamburger { display: flex; }
-            .brand { min-width: auto; }
-            .brand-name { display: none; }
-            .search-bar { max-width: 100%; }
-            .info-label { width: 100px; }
-            .modal-container { width: 95%; }
-            .post-content, .post-stats, .attachment-link, .post-actions, .comments-section { padding-left: 0; margin-left: 0; }
-            .post-user-info { flex-wrap: wrap; }
-            .notification-dropdown { width: 300px; right: -20px; }
-            .badge-card { min-width: 80px; padding: 8px 10px; }
-        }
+       @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 16px; }
+    .hamburger { display: flex; }
+    
+    /* Header fixes */
+    .topnav {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        padding: 0 12px !important;
+    }
+    .brand { min-width: auto !important; flex-shrink: 0 !important; }
+    .brand-name { display: none !important; }
+    .search-bar { max-width: 100% !important; flex: 1 !important; min-width: 0 !important; }
+    .search-bar input { font-size: 0.7rem !important; }
+    .nav-actions { margin-left: 0 !important; display: flex !important; flex-direction: row !important; gap: 6px !important; flex-shrink: 0 !important; }
+    .nav-btn, .avatar-btn { width: 32px !important; height: 32px !important; margin: 0 !important; flex-shrink: 0 !important; }
+    .nav-btn svg { width: 14px !important; height: 14px !important; }
+    .nav-btn .badge { top: -4px !important; right: -4px !important; min-width: 16px !important; height: 16px !important; font-size: 0.5rem !important; }
+    
+    /* Other existing styles */
+    .brand { min-width: auto; }
+    .brand-name { display: none; }
+    .search-bar { max-width: 100%; }
+    .info-label { width: 100px; }
+    .modal-container { width: 95%; }
+    .post-content, .post-stats, .attachment-link, .post-actions, .comments-section { padding-left: 0; margin-left: 0; }
+    .post-user-info { flex-wrap: wrap; }
+    .notification-dropdown { width: 300px; right: -20px; }
+    .badge-card { min-width: 80px; padding: 8px 10px; }
+}
     </style>
 </head>
 
