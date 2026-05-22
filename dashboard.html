@@ -23,47 +23,65 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
     
-     const firebaseConfig = {
-            apiKey: "AIzaSyAaAzrozCFskE7L-fc2fsN8EZNTAy_3rvI",
-            authDomain: "skillswap-dbecc.firebaseapp.com",
-            projectId: "skillswap-dbecc",
-            storageBucket: "skillswap-dbecc.firebasestorage.app",
-            messagingSenderId: "205182290305",
-            appId: "1:205182290305:web:0050f1d8a489b1a5854080"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyAaAzrozCFskE7L-fc2fsN8EZNTAy_3rvI",
+        authDomain: "skillswap-dbecc.firebaseapp.com",
+        projectId: "skillswap-dbecc",
+        storageBucket: "skillswap-dbecc.firebasestorage.app",
+        messagingSenderId: "205182290305",
+        appId: "1:205182290305:web:0050f1d8a489b1a5854080"
+    };
     
     const app = initializeApp(firebaseConfig);
     const messaging = getMessaging(app);
     
+    // Make functions available globally
     window.requestNotificationPermission = async function() {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          const token = await getToken(messaging, { vapidKey: "BLmFBeInoetCMwIJjTeYL9CQDgSe_JIdh8jKI2lUnZbXXam6Ar-c_04hT74T6LbsO1zPtfAwNMm09dRrFfJOoyI" });
-          const apiUrl = window.API_CONFIG?.BASE_URL || 'https://skillswapph-production.up.railway.app/api/v1';
-          const authToken = localStorage.getItem('access_token');
-          await fetch(`${apiUrl}/fcm/register-token`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: token })
-          });
-          showToast('✅ Notifications enabled!');
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await getToken(messaging, {
+                    vapidKey: "BLmFBeInoetCMwIJjTeYL9CQDgSe_JIdh8jKI2lUnZbXXam6Ar-c_04hT74T6LbsO1zPtfAwNMm09dRrFfJOoyI"
+                });
+                console.log('FCM Token:', token);
+                
+                const apiUrl = window.API_URL || 'https://skillswapph-production.up.railway.app/api/v1';
+                const authToken = localStorage.getItem('access_token');
+                
+                await fetch(`${apiUrl}/fcm/register-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token: token })
+                });
+                
+                localStorage.setItem('fcm_token', token);
+                showToast('✅ Notifications enabled!');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('❌ Failed to enable notifications');
         }
-      } catch (error) {
-        console.error('Error:', error);
-      }
     };
     
     onMessage(messaging, (payload) => {
-      showToast(`🔔 ${payload.notification?.title || 'New notification'}: ${payload.notification?.body || ''}`);
-      if (window.loadUnreadCounts) window.loadUnreadCounts();
-      if (window.loadNotifications) window.loadNotifications();
+        showToast(`🔔 ${payload.notification?.title || 'New notification'}: ${payload.notification?.body || ''}`);
+        if (window.currentTab === 'conversations') {
+            renderConversations();
+        }
     });
     
+    // Auto-request after login
     if (localStorage.getItem('access_token')) {
-      setTimeout(() => { if (Notification.permission === 'default') window.requestNotificationPermission(); }, 2000);
+        setTimeout(() => {
+            if (Notification.permission === 'default') {
+                window.requestNotificationPermission();
+            }
+        }, 2000);
     }
-  </script>
+</script>
 
   <style>
     * {
