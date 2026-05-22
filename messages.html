@@ -23,12 +23,12 @@
         
         // Your Firebase config (REPLACE WITH YOUR ACTUAL CONFIG)
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAaAzrozCFskE7L-fc2fsN8EZNTAy_3rvI",
+            authDomain: "skillswap-dbecc.firebaseapp.com",
+            projectId: "skillswap-dbecc",
+            storageBucket: "skillswap-dbecc.firebasestorage.app",
+            messagingSenderId: "205182290305",
+            appId: "1:205182290305:web:0050f1d8a489b1a5854080"
         };
         
         // Initialize Firebase
@@ -44,7 +44,7 @@
                     
                     // Get FCM token
                     const token = await getToken(messaging, {
-                        vapidKey: "YOUR_VAPID_KEY" // Get from Firebase Console → Project Settings → Cloud Messaging
+                        vapidKey: "BLmFBeInoetCMwIJjTeYL9CQDgSe_JIdh8jKI2lUnZbXXam6Ar-c_04hT74T6LbsO1zPtfAwNMm09dRrFfJOoyI" // Get from Firebase Console → Project Settings → Cloud Messaging
                     });
                     
                     console.log('FCM Token:', token);
